@@ -1,12 +1,12 @@
-import { sql } from '@vercel/postgres'
-import { initDB } from '../../lib/db'
+import { getSQL, initDB } from '../../lib/db'
 
 export default async function handler(req, res) {
   try {
     await initDB()
+    const sql = getSQL()
 
     if (req.method === 'GET') {
-      const { rows } = await sql`SELECT * FROM products ORDER BY created_at DESC`
+      const rows = await sql`SELECT * FROM products ORDER BY created_at DESC`
       return res.json(rows)
     }
 
@@ -16,7 +16,7 @@ export default async function handler(req, res) {
         selling_points, notes, scores, placement, entered_by, entered_by_role
       } = req.body
 
-      const { rows } = await sql`
+      const rows = await sql`
         INSERT INTO products (
           crop, name, brand, maturity, is_new, technologies,
           selling_points, notes, scores, placement, entered_by, entered_by_role
@@ -40,7 +40,4 @@ export default async function handler(req, res) {
 
     res.status(405).end()
   } catch (e) {
-    console.error(e)
-    res.status(500).json({ error: e.message })
-  }
-}
+    console.erro
