@@ -18,6 +18,7 @@ export default async function handler(req, res) {
 
     const blob = await put(filename, buffer, {
       access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
       contentType,
     })
 
