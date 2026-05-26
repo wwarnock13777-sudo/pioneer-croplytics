@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap');
+
+:root {
+  --pioneer-red: #CC0000;
+  --pioneer-red-dark: #990000;
+  --pioneer-red-light: #FF2222;
+  --gd: #1B3A1F;
+  --gd-mid: #2D5C34;
+  --gd-light: #4A8C54;
+  --gold: #E8A400;
+  --gold-light: #FFB800;
+  --bg: #0D1710;
+  --bg-card: #111F14;
+  --bg-card2: #162019;
+  --border: rgba(255,255,255,0.08);
+  --border-green: rgba(74,140,84,0.3);
+  --text: #F0F4F0;
+  --text-muted: #8BA890;
+  --text-dim: #506450;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Barlow', sans-serif; font-size: 15px; line-height: 1.5; overscroll-behavior: none; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gd-light); border-radius: 2px; }
+
+.app-shell { display: flex; flex-direction: column; height: 100dvh; max-width: 480px; margin: 0 auto; position: relative; overflow: hidden; }
+
+.app-header { background: linear-gradient(135deg, var(--gd) 0%, #0F2212 100%); padding: 18px 20px 14px; border-bottom: 1px solid var(--border-green); flex-shrink: 0; padding-top: max(18px, env(safe-area-inset-top, 18px)); }
+.header-top { display: flex; align-items: center; justify-content: space-between; }
+.header-brand { display: flex; align-items: center; gap: 10px; }
+.header-icon { width: 38px; height: 38px; background: var(--pioneer-red); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 12px rgba(204,0,0,0.4); }
+.header-wordmark { display: flex; flex-direction: column; line-height: 1; }
+.header-wordmark .app-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: 0.5px; color: #fff; }
+.header-wordmark .app-name span { color: var(--pioneer-red-light); }
+.header-wordmark .app-sub { font-size: 10px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+.season-badge { background: var(--gold); color: #000; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 1px; padding: 4px 10px; border-radius: 20px; }
+.user-pill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.06); border: 1px solid var(--border); border-radius: 20px; padding: 5px 10px 5px 6px; cursor: pointer; font-size: 12px; color: var(--text-muted); margin-top: 10px; }
+.user-avatar { width: 22px; height: 22px; background: var(--pioneer-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; color: white; }
+
+.app-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 16px 16px 0; scroll-behavior: smooth; }
+
+.tab-bar { display: flex; background: var(--bg-card); border-top: 1px solid var(--border); flex-shrink: 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+.tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 4px; background: none; border: none; color: var(--text-dim); font-family: 'Barlow Condensed', sans-serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: color 0.2s; position: relative; }
+.tab-btn.active { color: var(--gd-light); }
+.tab-btn.active::before { content: ''; position: absolute; top: 0; left: 20%; right: 20%; height: 2px; background: var(--gd-light); border-radius: 0 0 2px 2px; }
+.tab-btn svg { width: 22px; height: 22px; }
+
+.section { display: none; padding-bottom: 20px; }
+.section.active { display: block; }
+
+.card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.card-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 15px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-muted); }
+
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; position: relative; overflow: hidden; }
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+.stat-card.corn::before { background: var(--gold); }
+.stat-card.soy::before { background: var(--gd-light); }
+.stat-card.wheat::before { background: #C8A96E; }
+.stat-card.obs::before { background: var(--pioneer-red); }
+.stat-value { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 36px; line-height: 1; color: #fff; }
+.stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 18px; border-radius: var(--radius-sm); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; border: none; transition: all 0.15s; }
+.btn-primary { background: var(--pioneer-red); color: white; box-shadow: 0 2px 12px rgba(204,0,0,0.3); }
+.btn-primary:active { background: var(--pioneer-red-dark); transform: scale(0.98); }
+.btn-secondary { background: transparent; color: var(--gd-light); border: 1px solid var(--border-green); }
+.btn-secondary:active { background: rgba(74,140,84,0.1); }
+.btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+.btn-full { width: 100%; justify-content: center; }
+.btn-sm { padding: 7px 12px; font-size: 12px; }
+
+.crop-tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; }
+.crop-tag.corn { background: rgba(232,164,0,0.15); color: var(--gold); border: 1px solid rgba(232,164,0,0.3); }
+.crop-tag.soybean { background: rgba(74,140,84,0.15); color: var(--gd-light); border: 1px solid rgba(74,140,84,0.3); }
+.crop-tag.whea
