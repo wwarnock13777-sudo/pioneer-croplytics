@@ -24,7 +24,7 @@ const CORN_TECH   = ['PowerCore Enlist','Vorceed Enlist','AcreMax','Qrome','VT2P
 const SOY_TECH    = ['ENLIST E3','Roundup Ready 2 Xtend','LibertyLink','Conventional']
 const STAGES_CORN = ['VE','V1','V2','V3','V4','V5','V6','V7','V8','V9','V10','VT','R1','R2','R3','R4','R5','R6']
 const STAGES_SOY  = ['VE','VC','V1','V2','V3','V4','V5','V6','R1','R2','R3','R4','R5','R6','R7','R8']
-const ADMIN_CODE  = 'PIONEER2026'
+const ADMIN_CODE  = 'KYLEQUICK'
 
 function fmtDate(iso) {
   if (!iso) return ''
@@ -891,6 +891,7 @@ export default function CropLytics() {
               <CropTag crop={data.crop}/>
               {data.is_new&&<span className="new-badge">NEW 2026</span>}
               {isAdmin&&<button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}} onClick={()=>{setShowDetail(null);setEditProduct(data);setShowProductModal(true)}}><IconEdit/> Edit</button>}
+              {isAdmin&&<button onClick={async()=>{if(!confirm('Delete this product?'))return;try{await fetch(`/api/products?id=${data.id}`,{method:'DELETE'});await loadAll();setShowDetail(null);showToast('Product deleted')}catch(e){alert('Error: '+e.message)}}} style={{background:'rgba(200,0,0,0.15)',border:'1px solid rgba(200,0,0,0.3)',borderRadius:8,padding:'6px 12px',color:'#ff6b6b',fontSize:12,fontFamily:'Barlow Condensed',fontWeight:700,cursor:'pointer',flexShrink:0}}>Delete</button>}
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:16}}>
               {[['Brand',data.brand],['Maturity',data.maturity],['Tech',(data.technologies||[]).join(', ')||'—']].map(([l,v])=>(
@@ -943,6 +944,7 @@ export default function CropLytics() {
 
     if (type==='obs') {
       const prod=products.find(p=>p.id===data.product_id)
+      const canDelete = isAdmin || data.entered_by === user?.name
       async function deleteObs() {
         if (!confirm('Delete this observation?')) return
         try {
@@ -956,7 +958,7 @@ export default function CropLytics() {
             <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
               <button onClick={()=>setShowDetail(null)} style={{background:'rgba(255,255,255,0.06)',border:'1px solid var(--border)',borderRadius:8,width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--text-muted)',flexShrink:0}}><IconBack/></button>
               <div style={{fontFamily:'Barlow Condensed',fontWeight:800,fontSize:22,color:'#fff',flex:1}}>{prod?.name||'Observation'}</div>
-              <button onClick={deleteObs} style={{background:'rgba(200,0,0,0.15)',border:'1px solid rgba(200,0,0,0.3)',borderRadius:8,padding:'6px 12px',color:'#ff6b6b',fontSize:12,fontFamily:'Barlow Condensed',fontWeight:700,cursor:'pointer',flexShrink:0}}>Delete</button>
+              {canDelete && <button onClick={deleteObs} style={{background:'rgba(200,0,0,0.15)',border:'1px solid rgba(200,0,0,0.3)',borderRadius:8,padding:'6px 12px',color:'#ff6b6b',fontSize:12,fontFamily:'Barlow Condensed',fontWeight:700,cursor:'pointer',flexShrink:0}}>Delete</button>}
             </div>
             {prod&&<div style={{marginBottom:12}}><CropTag crop={prod.crop}/></div>}
             <div style={{display:'flex',gap:16,marginBottom:14,flexWrap:'wrap'}}>
@@ -974,6 +976,7 @@ export default function CropLytics() {
     }
 
     if (type==='plot') {
+      const canDelete = isAdmin || data.entered_by === user?.name
       async function deletePlot() {
         if (!confirm('Delete this entry?')) return
         try {
@@ -987,7 +990,7 @@ export default function CropLytics() {
             <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
               <button onClick={()=>setShowDetail(null)} style={{background:'rgba(255,255,255,0.06)',border:'1px solid var(--border)',borderRadius:8,width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--text-muted)',flexShrink:0}}><IconBack/></button>
               <div style={{fontFamily:'Barlow Condensed',fontWeight:800,fontSize:22,color:'#fff',flex:1}}>{data.field_name}</div>
-              <button onClick={deletePlot} style={{background:'rgba(200,0,0,0.15)',border:'1px solid rgba(200,0,0,0.3)',borderRadius:8,padding:'6px 12px',color:'#ff6b6b',fontSize:12,fontFamily:'Barlow Condensed',fontWeight:700,cursor:'pointer',flexShrink:0}}>Delete</button>
+              {canDelete && <button onClick={deletePlot} style={{background:'rgba(200,0,0,0.15)',border:'1px solid rgba(200,0,0,0.3)',borderRadius:8,padding:'6px 12px',color:'#ff6b6b',fontSize:12,fontFamily:'Barlow Condensed',fontWeight:700,cursor:'pointer',flexShrink:0}}>Delete</button>}
             </div>
             <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
               <span className={`crop-tag ${data.type==='pkp'?'corn':'soybean'}`}>{data.type?.toUpperCase()}</span>
