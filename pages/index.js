@@ -943,10 +943,21 @@ export default function CropLytics() {
 
     if (type==='obs') {
       const prod=products.find(p=>p.id===data.product_id)
+      async function deleteObs() {
+        if (!confirm('Delete this observation?')) return
+        try {
+          await fetch(`/api/observations?id=${data.id}`, {method:'DELETE'})
+          await loadAll(); setShowDetail(null); showToast('Deleted')
+        } catch(e){ alert('Error: '+e.message) }
+      }
       return (
         <div className="modal-overlay">
           <div className="modal">
-            <ModalHeader title={prod?.name||'Observation'} onBack={()=>setShowDetail(null)}/>
+            <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
+              <button onClick={()=>setShowDetail(null)} style={{background:'rgba(255,255,255,0.06)',border:'1px solid var(--border)',borderRadius:8,width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--text-muted)',flexShrink:0}}><IconBack/></button>
+              <div style={{fontFamily:'Barlow Condensed',fontWeight:800,fontSize:22,color:'#fff',flex:1}}>{prod?.name||'Observation'}</div>
+              <button onClick={deleteObs} style={{background:'rgba(200,0,0,0.15)',border:'1px solid rgba(200,0,0,0.3)',borderRadius:8,padding:'6px 12px',color:'#ff6b6b',fontSize:12,fontFamily:'Barlow Condensed',fontWeight:700,cursor:'pointer',flexShrink:0}}>Delete</button>
+            </div>
             {prod&&<div style={{marginBottom:12}}><CropTag crop={prod.crop}/></div>}
             <div style={{display:'flex',gap:16,marginBottom:14,flexWrap:'wrap'}}>
               <div><div style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>Date</div><div style={{fontSize:14}}>{fmtDate(data.date)}</div></div>
@@ -963,10 +974,21 @@ export default function CropLytics() {
     }
 
     if (type==='plot') {
+      async function deletePlot() {
+        if (!confirm('Delete this entry?')) return
+        try {
+          await fetch(`/api/plots?id=${data.id}`, {method:'DELETE'})
+          await loadAll(); setShowDetail(null); showToast('Deleted')
+        } catch(e){ alert('Error: '+e.message) }
+      }
       return (
         <div className="modal-overlay">
           <div className="modal">
-            <ModalHeader title={data.field_name} onBack={()=>setShowDetail(null)}/>
+            <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
+              <button onClick={()=>setShowDetail(null)} style={{background:'rgba(255,255,255,0.06)',border:'1px solid var(--border)',borderRadius:8,width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--text-muted)',flexShrink:0}}><IconBack/></button>
+              <div style={{fontFamily:'Barlow Condensed',fontWeight:800,fontSize:22,color:'#fff',flex:1}}>{data.field_name}</div>
+              <button onClick={deletePlot} style={{background:'rgba(200,0,0,0.15)',border:'1px solid rgba(200,0,0,0.3)',borderRadius:8,padding:'6px 12px',color:'#ff6b6b',fontSize:12,fontFamily:'Barlow Condensed',fontWeight:700,cursor:'pointer',flexShrink:0}}>Delete</button>
+            </div>
             <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
               <span className={`crop-tag ${data.type==='pkp'?'corn':'soybean'}`}>{data.type?.toUpperCase()}</span>
               <span style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>{data.crop}</span>
