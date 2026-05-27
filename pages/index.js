@@ -1,3 +1,4 @@
+cat > /home/claude/croplytics2/pages/index.js << 'ENDOFFILE'
 import { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
 
@@ -8,7 +9,9 @@ const IconCompare = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentC
 const IconPlus = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>)
 const IconX = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>)
 const IconEdit = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>)
-const IconPin = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>)
+const IconBack = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>)
+const IconPrint = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>)
+const IconMap = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>)
 
 const CROPS = ['Corn', 'Soybean', 'Wheat']
 const BRANDS = ['Pioneer', 'DeKalb', 'Channel', 'Dyna-Gro', 'Croplan', 'AgriGold', 'Brevant', 'Other']
@@ -22,6 +25,7 @@ const CORN_TECH   = ['PowerCore Enlist','Vorceed Enlist','AcreMax','Qrome','VT2P
 const SOY_TECH    = ['ENLIST E3','Roundup Ready 2 Xtend','LibertyLink','Conventional']
 const STAGES_CORN = ['VE','V1','V2','V3','V4','V5','V6','V7','V8','V9','V10','VT','R1','R2','R3','R4','R5','R6']
 const STAGES_SOY  = ['VE','VC','V1','V2','V3','V4','V5','V6','R1','R2','R3','R4','R5','R6','R7','R8']
+const ADMIN_CODE  = 'PIONEER2026'
 
 function fmtDate(iso) {
   if (!iso) return ''
@@ -40,6 +44,25 @@ function CropTag({ crop }) {
 }
 function ScoreBar({ val, color='var(--gd-light)' }) {
   return <div className="compare-bar-wrap" style={{height:8}}><div className="compare-bar-fill" style={{width:`${(val/9)*100}%`,background:color}}/></div>
+}
+function ModalHeader({ title, onBack }) {
+  return (
+    <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
+      <button onClick={onBack} style={{background:'rgba(255,255,255,0.06)',border:'1px solid var(--border)',borderRadius:8,width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--text-muted)',flexShrink:0}}>
+        <IconBack/>
+      </button>
+      <div style={{fontFamily:'Barlow Condensed',fontWeight:800,fontSize:22,color:'#fff'}}>{title}</div>
+    </div>
+  )
+}
+function GoogleMapsButton({ gps }) {
+  if (!gps?.lat || !gps?.lng) return null
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${gps.lat},${gps.lng}`
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer" style={{display:'inline-flex',alignItems:'center',gap:6,padding:'8px 14px',background:'rgba(74,140,84,0.15)',border:'1px solid var(--border-green)',borderRadius:8,color:'var(--gd-light)',fontSize:13,fontFamily:'Barlow Condensed',fontWeight:700,textDecoration:'none',marginBottom:12}}>
+      <IconMap/> Get Directions in Google Maps
+    </a>
+  )
 }
 
 async function apiFetch(path) {
@@ -64,12 +87,11 @@ async function uploadPhoto(file) {
   return url
 }
 
-// Simple map drop pin component (no external library needed)
 function MapPinPicker({ onSelect, initial }) {
   const [active, setActive] = useState(false)
   const [coords, setCoords] = useState(initial || null)
   const [loading, setLoading] = useState(false)
-  const [address, setAddress] = useState(initial?.address || '')
+  const [address, setAddress] = useState('')
 
   async function getCurrentLocation() {
     setLoading(true)
@@ -77,17 +99,12 @@ function MapPinPicker({ onSelect, initial }) {
       const pos = await new Promise((res,rej) => navigator.geolocation.getCurrentPosition(res,rej,{timeout:10000}))
       const lat = pos.coords.latitude.toFixed(6)
       const lng = pos.coords.longitude.toFixed(6)
-      // Reverse geocode
       const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
       const data = await resp.json()
       const addr = data.display_name || `${lat}, ${lng}`
       const result = { lat, lng, address: addr }
-      setCoords(result)
-      setAddress(addr)
-      onSelect(result)
-    } catch(e) {
-      alert('Could not get location. Please allow location access.')
-    }
+      setCoords(result); onSelect(result)
+    } catch(e) { alert('Could not get location. Please allow location access.') }
     setLoading(false)
   }
 
@@ -99,9 +116,7 @@ function MapPinPicker({ onSelect, initial }) {
       const data = await resp.json()
       if (data[0]) {
         const result = { lat: parseFloat(data[0].lat).toFixed(6), lng: parseFloat(data[0].lon).toFixed(6), address: data[0].display_name }
-        setCoords(result)
-        setAddress(data[0].display_name)
-        onSelect(result)
+        setCoords(result); onSelect(result)
       }
     } catch(e) {}
     setLoading(false)
@@ -109,20 +124,19 @@ function MapPinPicker({ onSelect, initial }) {
 
   return (
     <div style={{marginBottom:14}}>
-      <label className="form-label">📍 Location Pin</label>
+      <label className="form-label">📍 GPS Location</label>
       {coords && (
-        <div style={{background:'rgba(74,140,84,0.1)', border:'1px solid var(--border-green)', borderRadius:8, padding:'8px 12px', marginBottom:8, fontSize:12, color:'var(--text-muted)'}}>
-          📍 {coords.address || `${coords.lat}, ${coords.lng}`}
-          <button onClick={()=>{setCoords(null);onSelect(null)}} style={{float:'right',background:'none',border:'none',color:'var(--text-dim)',cursor:'pointer',fontSize:14}}>×</button>
+        <div style={{background:'rgba(74,140,84,0.1)',border:'1px solid var(--border-green)',borderRadius:8,padding:'8px 12px',marginBottom:8,fontSize:12,color:'var(--text-muted)'}}>
+          <div style={{fontFamily:'Barlow Condensed',fontWeight:700,color:'var(--gd-light)',marginBottom:2}}>📍 {coords.lat}, {coords.lng}</div>
+          <div style={{fontSize:11,color:'var(--text-dim)'}}>{coords.address}</div>
+          <button onClick={()=>{setCoords(null);onSelect(null)}} style={{marginTop:4,background:'none',border:'none',color:'var(--text-dim)',cursor:'pointer',fontSize:11,padding:0}}>× Remove pin</button>
         </div>
       )}
       <div style={{display:'flex',gap:8}}>
         <button className="btn btn-secondary btn-sm" onClick={getCurrentLocation} disabled={loading} style={{flex:1}}>
           {loading ? '...' : '📍 Use My Location'}
         </button>
-        <button className="btn btn-ghost btn-sm" onClick={()=>setActive(!active)} style={{flex:1}}>
-          🔍 Search Address
-        </button>
+        <button className="btn btn-ghost btn-sm" onClick={()=>setActive(!active)} style={{flex:1}}>🔍 Search</button>
       </div>
       {active && (
         <div style={{marginTop:8,display:'flex',gap:6}}>
@@ -160,6 +174,8 @@ export default function CropLytics() {
     toastRef.current = setTimeout(()=>setToast(null), 2500)
   }
 
+  const isAdmin = user?.isAdmin === true
+
   useEffect(()=>{
     const saved = localStorage.getItem('cl_user')
     if (saved) setUser(JSON.parse(saved))
@@ -183,12 +199,17 @@ export default function CropLytics() {
   function Onboard() {
     const [name, setName] = useState('')
     const [role, setRole] = useState('Field Agronomy')
+    const [code, setCode] = useState('')
+    const [showCode, setShowCode] = useState(false)
+
     function save() {
       if (!name.trim()) return
-      const u = {name:name.trim(), role, id:Date.now().toString()}
+      const isAdmin = code.trim().toUpperCase() === ADMIN_CODE
+      const u = {name:name.trim(), role, id:Date.now().toString(), isAdmin}
       localStorage.setItem('cl_user', JSON.stringify(u))
       setUser(u); setShowOnboard(false)
     }
+
     return (
       <div className="onboard-overlay">
         <div className="onboard-logo">
@@ -206,13 +227,20 @@ export default function CropLytics() {
         <div style={{width:'100%',maxWidth:320,display:'flex',flexDirection:'column',gap:12}}>
           <div className="form-group" style={{marginBottom:0}}>
             <label className="form-label">Your Name</label>
-            <input className="form-input" placeholder="e.g. Jake Miller" value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&save()} autoFocus/>
+            <input className="form-input" placeholder="e.g. Jake Miller" value={name} onChange={e=>setName(e.target.value)} autoFocus/>
           </div>
           <div className="form-group" style={{marginBottom:0}}>
             <label className="form-label">Team</label>
             <select className="form-select" value={role} onChange={e=>setRole(e.target.value)}>
               <option>Field Agronomy</option><option>Sales Rep</option><option>DSM</option><option>Other</option>
             </select>
+          </div>
+          <div className="form-group" style={{marginBottom:0}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}>
+              <label className="form-label" style={{marginBottom:0}}>Admin Code <span style={{color:'var(--text-dim)',fontWeight:400}}>(optional)</span></label>
+            </div>
+            <input className="form-input" type="password" placeholder="Enter admin code if you have one" value={code} onChange={e=>setCode(e.target.value)} onKeyDown={e=>e.key==='Enter'&&save()}/>
+            <div style={{fontSize:11,color:'var(--text-dim)',marginTop:4}}>Admin code required to add or edit products</div>
           </div>
           <button className="btn btn-primary btn-full" style={{marginTop:4}} onClick={save}>Get Started →</button>
         </div>
@@ -277,13 +305,18 @@ export default function CropLytics() {
       <div>
         <div className="section-header">
           <span className="section-title">Products</span>
-          <button className="btn btn-primary btn-sm" onClick={()=>{setEditProduct(null);setShowProductModal(true)}}><IconPlus/> Add</button>
+          {isAdmin && <button className="btn btn-primary btn-sm" onClick={()=>{setEditProduct(null);setShowProductModal(true)}}><IconPlus/> Add</button>}
         </div>
+        {isAdmin && (
+          <div style={{background:'rgba(74,140,84,0.08)',border:'1px solid var(--border-green)',borderRadius:8,padding:'6px 12px',marginBottom:12,fontSize:12,color:'var(--gd-light)'}}>
+            🔑 Admin mode — you can add and edit products
+          </div>
+        )}
         <div className="filter-tabs">
           {['All','Corn','Soybean','Wheat'].map(f=><button key={f} className={`filter-tab ${productFilter===f?'active':''}`} onClick={()=>setProductFilter(f)}>{f}</button>)}
         </div>
         {filtered.length===0
-          ? <div className="empty-state"><p>No products yet. Tap Add to get started.</p></div>
+          ? <div className="empty-state"><p>No products yet.{isAdmin?' Tap Add to get started.':''}</p></div>
           : filtered.map(p=>{
               const keys = p.crop==='Corn'?CORN_SCORES:p.crop==='Soybean'?SOY_SCORES:WHEAT_SCORES
               const scores=p.scores||{}
@@ -311,9 +344,11 @@ export default function CropLytics() {
                       {p.entered_by&&<span className="by">{p.entered_by}</span>}
                       <span>{fmtDate(p.created_at)}</span>
                     </div>
-                    <button className="btn btn-ghost btn-sm" style={{padding:'4px 10px',fontSize:11}} onClick={()=>{setEditProduct(p);setShowProductModal(true)}}>
-                      <IconEdit/> Edit
-                    </button>
+                    {isAdmin && (
+                      <button className="btn btn-ghost btn-sm" style={{padding:'4px 10px',fontSize:11}} onClick={()=>{setEditProduct(p);setShowProductModal(true)}}>
+                        <IconEdit/> Edit
+                      </button>
+                    )}
                   </div>
                 </div>
               )
@@ -374,6 +409,7 @@ export default function CropLytics() {
                   <div className="obs-header"><span className={`crop-tag ${e.type==='pkp'?'corn':'soybean'}`}>{e.type?.toUpperCase()}</span><span className="obs-date">{fmtDate(e.date)}</span></div>
                   <div className="obs-product">{e.field_name}</div>
                   <div className="obs-stage">{e.growth_stage} · {e.location}</div>
+                  {e.gps&&<div style={{fontSize:11,color:'var(--gd-light)',marginTop:2}}>📍 {e.gps.lat}, {e.gps.lng}</div>}
                   <div className="obs-notes">{e.field_notes}</div>
                   {e.photos?.length>0&&<div className="photo-strip">{e.photos.slice(0,3).map((url,i)=><img key={i} className="photo-thumb" src={url} alt="" onClick={ev=>{ev.stopPropagation();setLightboxUrl(url)}}/>)}</div>}
                   <div className="entry-meta">{e.entered_by&&<span className="by">{e.entered_by}</span>}<span>{e.products_data?.length||0} products</span></div>
@@ -407,11 +443,73 @@ export default function CropLytics() {
       return (obs.reduce((s,o)=>s+(o.rating||0),0)/obs.length).toFixed(1)
     }
 
+    function printComparison() {
+      const rows = [
+        {label:'Crop', get:p=>p.crop},
+        {label:'Maturity', get:p=>p.maturity||'—'},
+        {label:'Brand', get:p=>p.brand||'—'},
+        {label:'Technology', get:p=>(p.technologies||[]).join(', ')||'—'},
+        {label:'Yield Zones', get:p=>(p.placement?.yieldZones||[]).join(', ')||'—'},
+        {label:'Field Obs Rating', get:p=>avgObs(p)},
+        ...scoreKeys.map(k=>({label:k, get:p=>(p.scores||{})[k]||0}))
+      ]
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Pioneer CropLytics — ${crop} Comparison</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #111; }
+            h1 { font-size: 22px; margin-bottom: 4px; }
+            h2 { font-size: 14px; color: #666; font-weight: normal; margin-bottom: 20px; }
+            table { width: 100%; border-collapse: collapse; font-size: 13px; }
+            th { background: #1B3A1F; color: white; padding: 8px 12px; text-align: left; }
+            th:not(:first-child) { text-align: center; }
+            td { padding: 7px 12px; border-bottom: 1px solid #ddd; }
+            td:not(:first-child) { text-align: center; font-weight: bold; }
+            tr:nth-child(even) { background: #f9f9f9; }
+            .attr { color: #555; font-weight: normal; }
+            .footer { margin-top: 20px; font-size: 11px; color: #999; }
+          </style>
+        </head>
+        <body>
+          <h1>Pioneer CropLytics — ${crop} Comparison</h1>
+          <h2>Indiana · 2026 Season · Printed ${new Date().toLocaleDateString()}</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Attribute</th>
+                ${selected.map(p=>`<th>${p.name}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(row=>`
+                <tr>
+                  <td class="attr">${row.label}</td>
+                  ${selected.map(p=>`<td>${row.get(p)}</td>`).join('')}
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="footer">Generated by Pioneer CropLytics · pioneer-croplytics-2026.vercel.app</div>
+        </body>
+        </html>
+      `
+      const win = window.open('', '_blank')
+      win.document.write(html)
+      win.document.close()
+      win.print()
+    }
+
     return (
       <div>
         <div className="section-header">
           <span className="section-title">Compare</span>
-          {selected.length>0&&<button className="btn btn-ghost btn-sm" onClick={()=>setSelected([])}>Clear</button>}
+          <div style={{display:'flex',gap:6}}>
+            {selected.length>0&&<button className="btn btn-ghost btn-sm" onClick={()=>setSelected([])}>Clear</button>}
+            {selected.length>=2&&<button className="btn btn-secondary btn-sm" onClick={printComparison}><IconPrint/> Print</button>}
+          </div>
         </div>
         <div className="filter-tabs">
           {CROPS.map(c=><button key={c} className={`filter-tab ${crop===c?'active':''}`} onClick={()=>{setCrop(c);setSelected([])}}>{c}</button>)}
@@ -439,13 +537,16 @@ export default function CropLytics() {
 
         {selected.length>=2&&(
           <div style={{overflowX:'auto'}}>
-            <div className="card-title" style={{marginBottom:10}}>Head-to-Head Comparison</div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+              <div className="card-title">Head-to-Head</div>
+              <button className="btn btn-secondary btn-sm" onClick={printComparison}><IconPrint/> Print</button>
+            </div>
             <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
               <thead>
                 <tr>
-                  <th style={{textAlign:'left',padding:'8px 10px',color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,borderBottom:'1px solid var(--border)',minWidth:140}}>Attribute</th>
+                  <th style={{textAlign:'left',padding:'8px 10px',color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1,borderBottom:'1px solid var(--border)',minWidth:160,background:'rgba(255,255,255,0.02)'}}>Attribute</th>
                   {selected.map((p,i)=>(
-                    <th key={p.id} style={{textAlign:'center',padding:'8px 10px',borderBottom:'1px solid var(--border)',minWidth:90}}>
+                    <th key={p.id} style={{textAlign:'center',padding:'8px 10px',borderBottom:'1px solid var(--border)',minWidth:90,background:'rgba(255,255,255,0.02)'}}>
                       <div style={{fontFamily:'Barlow Condensed',fontWeight:700,fontSize:15,color:colors[i]}}>{p.name}</div>
                     </th>
                   ))}
@@ -457,19 +558,19 @@ export default function CropLytics() {
                   {label:'Maturity', get:p=>p.maturity||'—'},
                   {label:'Brand', get:p=>p.brand||'—'},
                   {label:'Technology', get:p=>(p.technologies||[]).join(', ')||'—'},
-                  {label:'Yield Zones', get:p=>(p.placement?.yieldZones||[]).join(', ')||p.placement?.yieldZone||'—'},
+                  {label:'Yield Zones', get:p=>(p.placement?.yieldZones||[]).join(', ')||'—'},
                   {label:'Field Obs Rating', get:p=>avgObs(p)},
                   ...scoreKeys.map(k=>({label:k, get:p=>(p.scores||{})[k]||0, isScore:true}))
                 ].map((row,ri)=>(
                   <tr key={ri} style={{background:ri%2===0?'rgba(255,255,255,0.02)':'transparent'}}>
-                    <td style={{padding:'8px 10px',color:'var(--text-muted)',fontSize:12,borderBottom:'1px solid rgba(255,255,255,0.04)'}}>{row.label}</td>
+                    <td style={{padding:'7px 10px',color:'var(--text-muted)',fontSize:12,borderBottom:'1px solid rgba(255,255,255,0.04)'}}>{row.label}</td>
                     {selected.map((p,i)=>{
                       const val = row.get(p)
                       const isNum = row.isScore
-                      const max = isNum ? Math.max(...selected.map(s=>row.get(s)||0)) : null
-                      const isTop = isNum && val===max && val>0
+                      const max = isNum ? Math.max(...selected.map(s=>Number(row.get(s))||0)) : null
+                      const isTop = isNum && Number(val)===max && Number(val)>0
                       return (
-                        <td key={p.id} style={{textAlign:'center',padding:'8px 10px',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                        <td key={p.id} style={{textAlign:'center',padding:'7px 10px',borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
                           {isNum
                             ? <span style={{fontFamily:'Barlow Condensed',fontWeight:700,fontSize:16,color:isTop?colors[i]:'var(--text)'}}>{val||'—'}</span>
                             : <span style={{fontSize:12,color:'var(--text-muted)'}}>{val}</span>
@@ -488,34 +589,28 @@ export default function CropLytics() {
     )
   }
 
-  // ── PRODUCT FORM (Add + Edit) ──
+  // ── PRODUCT FORM ──
   function ProductForm() {
     const isEdit = !!editProduct
     const [form, setForm] = useState(isEdit ? {
-      crop: editProduct.crop||'Corn',
-      name: editProduct.name||'',
-      brand: editProduct.brand||'Pioneer',
-      maturity: editProduct.maturity||'',
-      is_new: editProduct.is_new||false,
-      technologies: editProduct.technologies||[],
-      selling_points: editProduct.selling_points||'',
-      notes: editProduct.notes||'',
-      scores: editProduct.scores||{},
-      placement: editProduct.placement||{soilTypes:[],drainage:[],popMin:'',popMax:'',yieldZones:[],placementNotes:''}
+      crop:editProduct.crop||'Corn', name:editProduct.name||'', brand:editProduct.brand||'Pioneer',
+      maturity:editProduct.maturity||'', is_new:editProduct.is_new||false,
+      technologies:editProduct.technologies||[], selling_points:editProduct.selling_points||'',
+      notes:editProduct.notes||'', scores:editProduct.scores||{},
+      placement:editProduct.placement||{soilTypes:[],drainage:[],popMin:'',popMax:'',yieldZones:[],placementNotes:''}
     } : {
       crop:'Corn', name:'', brand:'Pioneer', maturity:'', is_new:false,
       technologies:[], selling_points:'', notes:'',
       scores:{}, placement:{soilTypes:[],drainage:[],popMin:'',popMax:'',yieldZones:[],placementNotes:''}
     })
     const [saving, setSaving] = useState(false)
-
     const scoreKeys = form.crop==='Corn'?CORN_SCORES:form.crop==='Soybean'?SOY_SCORES:WHEAT_SCORES
     const techOptions = form.crop==='Corn'?CORN_TECH:SOY_TECH
-
     function set(k,v){ setForm(f=>({...f,[k]:v})) }
     function setScore(k,v){ setForm(f=>({...f,scores:{...f.scores,[k]:Number(v)}})) }
     function setP(k,v){ setForm(f=>({...f,placement:{...f.placement,[k]:v}})) }
     function toggleArr(arr,val){ return arr.includes(val)?arr.filter(x=>x!==val):[...arr,val] }
+    function close(){ setShowProductModal(false); setEditProduct(null) }
 
     async function save() {
       if (!form.name.trim()) return alert('Please enter a product name')
@@ -526,30 +621,23 @@ export default function CropLytics() {
         } else {
           await apiPost('/api/products', {...form, entered_by:user.name, entered_by_role:user.role})
         }
-        await loadAll()
-        setShowProductModal(false)
-        setEditProduct(null)
-        showToast(isEdit?'Product updated!':'Product saved!')
+        await loadAll(); close(); showToast(isEdit?'Product updated!':'Product saved!')
       } catch(e){ alert('Error: '+e.message) }
       setSaving(false)
     }
 
     return (
-      <div className="modal-overlay" onClick={()=>{setShowProductModal(false);setEditProduct(null)}}>
-        <div className="modal" onClick={e=>e.stopPropagation()}>
-          <div className="modal-handle"/>
-          <div className="modal-title">{isEdit?'Edit Product':'Add Product'}</div>
-
+      <div className="modal-overlay">
+        <div className="modal">
+          <ModalHeader title={isEdit?'Edit Product':'Add Product'} onBack={close}/>
           <div className="form-group">
             <label className="form-label">Crop</label>
             <div className="chip-group">{CROPS.map(c=><button key={c} className={`chip ${form.crop===c?'selected':''}`} onClick={()=>set('crop',c)}>{c}</button>)}</div>
           </div>
-
           <div className="form-group">
             <label className="form-label">Product Name / Hybrid #</label>
             <input className="form-input" placeholder="e.g. P1197AM" value={form.name} onChange={e=>set('name',e.target.value)} autoFocus/>
           </div>
-
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
             <div className="form-group">
               <label className="form-label">Brand</label>
@@ -562,12 +650,10 @@ export default function CropLytics() {
               <input className="form-input" placeholder={form.crop==='Corn'?'110 RM':'3.8'} value={form.maturity} onChange={e=>set('maturity',e.target.value)}/>
             </div>
           </div>
-
           <div className="form-group" style={{display:'flex',alignItems:'center',gap:10}}>
             <input type="checkbox" id="isnew" checked={form.is_new} onChange={e=>set('is_new',e.target.checked)} style={{width:18,height:18}}/>
             <label htmlFor="isnew" style={{fontSize:14,color:'var(--text-muted)'}}>New for 2026 Season</label>
           </div>
-
           <div className="form-group">
             <label className="form-label">Technology</label>
             <select className="form-select" value={form.technologies[0]||''} onChange={e=>set('technologies',e.target.value?[e.target.value]:[])}>
@@ -575,7 +661,6 @@ export default function CropLytics() {
               {techOptions.map(t=><option key={t}>{t}</option>)}
             </select>
           </div>
-
           <div className="divider"/>
           <div className="card-title" style={{marginBottom:12}}>Agronomic Ratings (1–9)</div>
           {scoreKeys.map(k=>(
@@ -584,34 +669,27 @@ export default function CropLytics() {
               <input type="range" min="0" max="9" value={form.scores[k]||0} onChange={e=>setScore(k,e.target.value)}/>
             </div>
           ))}
-
           <div className="divider"/>
           <div className="card-title" style={{marginBottom:12}}>Placement</div>
-
           <div className="form-group">
             <label className="form-label">Soil Types</label>
             <div className="chip-group">{SOIL_TYPES.map(s=><button key={s} className={`chip ${(form.placement.soilTypes||[]).includes(s)?'selected':''}`} onClick={()=>setP('soilTypes',toggleArr(form.placement.soilTypes||[],s))}>{s}</button>)}</div>
           </div>
-
           <div className="form-group">
             <label className="form-label">Drainage</label>
             <div className="chip-group">{DRAINAGE.map(d=><button key={d} className={`chip ${(form.placement.drainage||[]).includes(d)?'selected':''}`} onClick={()=>setP('drainage',toggleArr(form.placement.drainage||[],d))}>{d}</button>)}</div>
           </div>
-
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
             <div className="form-group"><label className="form-label">Pop Min</label><input className="form-input" placeholder="28,000" value={form.placement.popMin||''} onChange={e=>setP('popMin',e.target.value)}/></div>
             <div className="form-group"><label className="form-label">Pop Max</label><input className="form-input" placeholder="36,000" value={form.placement.popMax||''} onChange={e=>setP('popMax',e.target.value)}/></div>
           </div>
-
           <div className="form-group">
             <label className="form-label">Target Yield Zone</label>
             <div className="chip-group">{YIELD_ZONES.map(y=><button key={y} className={`chip ${(form.placement.yieldZones||[]).includes(y)?'selected':''}`} onClick={()=>setP('yieldZones',toggleArr(form.placement.yieldZones||[],y))}>{y}</button>)}</div>
           </div>
-
           <div className="form-group"><label className="form-label">Placement Notes</label><textarea className="form-textarea" placeholder="Additional placement guidance…" value={form.placement.placementNotes||''} onChange={e=>setP('placementNotes',e.target.value)}/></div>
           <div className="form-group"><label className="form-label">Selling Points</label><textarea className="form-textarea" placeholder="Key selling points…" value={form.selling_points} onChange={e=>set('selling_points',e.target.value)}/></div>
           <div className="form-group"><label className="form-label">Notes</label><textarea className="form-textarea" placeholder="General notes…" value={form.notes} onChange={e=>set('notes',e.target.value)}/></div>
-
           <button className="btn btn-primary btn-full" onClick={save} disabled={saving}>{saving?'Saving…':isEdit?'Save Changes':'Save Product'}</button>
         </div>
       </div>
@@ -645,10 +723,9 @@ export default function CropLytics() {
       setSaving(false)
     }
     return (
-      <div className="modal-overlay" onClick={()=>setShowObsModal(false)}>
-        <div className="modal" onClick={e=>e.stopPropagation()}>
-          <div className="modal-handle"/>
-          <div className="modal-title">Field Observation</div>
+      <div className="modal-overlay">
+        <div className="modal">
+          <ModalHeader title="Field Observation" onBack={()=>setShowObsModal(false)}/>
           <div className="form-group">
             <label className="form-label">Product</label>
             <select className="form-select" value={form.product_id} onChange={e=>set('product_id',e.target.value)}>
@@ -686,31 +763,26 @@ export default function CropLytics() {
 
   // ── PKP / PXP MODAL ──
   function AddPlotModal() {
-    const isPKP = plotType === 'pkp'
+    const isPKP = plotType==='pkp'
     const minProducts = 2
     const maxProducts = isPKP ? 20 : 4
-
     const [form, setForm] = useState({
-      type: plotType, field_name:'', date:new Date().toISOString().split('T')[0],
-      crop:'Corn', growth_stage:'', location:'', field_notes:'',
-      gps: null, products_data:[]
+      type:plotType, field_name:'', date:new Date().toISOString().split('T')[0],
+      crop:'Corn', growth_stage:'', location:'', field_notes:'', gps:null, products_data:[]
     })
     const [fieldPhotos, setFieldPhotos] = useState([])
     const [saving, setSaving] = useState(false)
     const fileRef = useRef()
-
     function set(k,v){ setForm(f=>({...f,[k]:v})) }
     const stages = form.crop==='Corn'?STAGES_CORN:STAGES_SOY
     const cropProds = products.filter(p=>p.crop===form.crop)
-
     function addProduct() {
       if (!cropProds.length) return
-      if (form.products_data.length>=maxProducts) return alert(`Maximum ${maxProducts} products for ${isPKP?'PKP':'PXP'}`)
-      setForm(f=>({...f,products_data:[...f.products_data,{pid:cropProds[0].id,rating:0,notes:'',photos:[]}]}))
+      if (form.products_data.length>=maxProducts) return alert(`Maximum ${maxProducts} products`)
+      setForm(f=>({...f,products_data:[...f.products_data,{pid:cropProds[0].id,rating:0,notes:'',photoFiles:[]}]}))
     }
     function updateProd(i,k,v){ setForm(f=>{ const arr=[...f.products_data]; arr[i]={...arr[i],[k]:v}; return {...f,products_data:arr} }) }
     function removeProd(i){ setForm(f=>({...f,products_data:f.products_data.filter((_,j)=>j!==i)})) }
-
     function handleFieldFiles(e) {
       Array.from(e.target.files).forEach(file=>{
         const reader=new FileReader()
@@ -718,26 +790,16 @@ export default function CropLytics() {
         reader.readAsDataURL(file)
       })
     }
-
-    // Per-product photo handling
-    const prodFileRefs = useRef([])
-    function handleProdFiles(e, i) {
+    function handleProdFiles(e,i) {
       Array.from(e.target.files).forEach(file=>{
         const reader=new FileReader()
-        reader.onload=ev=>{
-          setForm(f=>{
-            const arr=[...f.products_data]
-            arr[i]={...arr[i],photoFiles:[...(arr[i].photoFiles||[]),{file,preview:ev.target.result}]}
-            return {...f,products_data:arr}
-          })
-        }
+        reader.onload=ev=>{ setForm(f=>{ const arr=[...f.products_data]; arr[i]={...arr[i],photoFiles:[...(arr[i].photoFiles||[]),{file,preview:ev.target.result}]}; return {...f,products_data:arr} }) }
         reader.readAsDataURL(file)
       })
     }
-
     async function save() {
       if (!form.field_name.trim()) return alert('Please enter a field name')
-      if (form.products_data.length < minProducts) return alert(`Please add at least ${minProducts} products`)
+      if (form.products_data.length<minProducts) return alert(`Please add at least ${minProducts} products`)
       setSaving(true)
       try {
         const photoUrls = await Promise.all(fieldPhotos.map(p=>uploadPhoto(p.file)))
@@ -745,29 +807,21 @@ export default function CropLytics() {
           const pUrls = await Promise.all((pd.photoFiles||[]).map(p=>uploadPhoto(p.file)))
           return {pid:pd.pid, rating:pd.rating, notes:pd.notes, photos:pUrls}
         }))
-        await apiPost('/api/plots', {
-          ...form, photos:photoUrls, products_data:prodData,
-          entered_by:user.name, entered_by_role:user.role
-        })
+        await apiPost('/api/plots', {...form, photos:photoUrls, products_data:prodData, entered_by:user.name, entered_by_role:user.role})
         await loadAll(); setShowPlotModal(false); showToast('Entry saved!')
       } catch(e){ alert('Error: '+e.message) }
       setSaving(false)
     }
-
     return (
-      <div className="modal-overlay" onClick={()=>setShowPlotModal(false)}>
-        <div className="modal" onClick={e=>e.stopPropagation()}>
-          <div className="modal-handle"/>
-          <div className="modal-title">{isPKP?'PKP Entry':'PXP Entry'}</div>
-          <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:16}}>{isPKP?'Pioneer Key Plot — 2 to 20 products':'Pioneer Xcel Plot — 2 to 4 products'}</div>
-
+      <div className="modal-overlay">
+        <div className="modal">
+          <ModalHeader title={isPKP?'PKP Entry':'PXP Entry'} onBack={()=>setShowPlotModal(false)}/>
+          <div style={{fontSize:12,color:'var(--text-muted)',marginBottom:14}}>{isPKP?'Pioneer Key Plot — 2 to 20 products':'Pioneer Xcel Plot — 2 to 4 products'}</div>
           <div className="form-group"><label className="form-label">Field Name</label><input className="form-input" placeholder="e.g. Johnson Farm" value={form.field_name} onChange={e=>set('field_name',e.target.value)}/></div>
-
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
             <div className="form-group"><label className="form-label">Date</label><input type="date" className="form-input" value={form.date} onChange={e=>set('date',e.target.value)}/></div>
             <div className="form-group"><label className="form-label">Crop</label><select className="form-select" value={form.crop} onChange={e=>set('crop',e.target.value)}>{CROPS.map(c=><option key={c}>{c}</option>)}</select></div>
           </div>
-
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
             <div className="form-group">
               <label className="form-label">Growth Stage</label>
@@ -778,18 +832,14 @@ export default function CropLytics() {
             </div>
             <div className="form-group"><label className="form-label">County / Township</label><input className="form-input" placeholder="e.g. Tippecanoe Co." value={form.location} onChange={e=>set('location',e.target.value)}/></div>
           </div>
-
           <MapPinPicker onSelect={gps=>set('gps',gps)} initial={form.gps}/>
-
           <div className="form-group"><label className="form-label">Field Notes</label><textarea className="form-textarea" placeholder="Overall field observations…" value={form.field_notes} onChange={e=>set('field_notes',e.target.value)}/></div>
-
           <div className="form-group">
             <label className="form-label">Field Photos</label>
             <div className="photo-upload-area" onClick={()=>fileRef.current?.click()}><div style={{fontSize:24,marginBottom:4}}>📷</div>Tap to add field photos</div>
             <input ref={fileRef} type="file" accept="image/*" multiple capture="environment" style={{display:'none'}} onChange={handleFieldFiles}/>
             {fieldPhotos.length>0&&<div className="photo-preview-grid">{fieldPhotos.map((p,i)=><div key={i} className="photo-preview-item"><img src={p.preview} alt=""/><button className="photo-remove" onClick={()=>setFieldPhotos(prev=>prev.filter((_,j)=>j!==i))}>×</button></div>)}</div>}
           </div>
-
           <div className="divider"/>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
             <div>
@@ -798,38 +848,29 @@ export default function CropLytics() {
             </div>
             <button className="btn btn-secondary btn-sm" onClick={addProduct} disabled={!cropProds.length||form.products_data.length>=maxProducts}>+ Add Product</button>
           </div>
-
-          {form.products_data.map((pd,i)=>{
-            if (!prodFileRefs.current[i]) prodFileRefs.current[i] = {current:null}
-            const prodRef = {current:null}
-            return (
-              <div key={i} className="card" style={{marginBottom:10}}>
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-                  <div style={{fontFamily:'Barlow Condensed',fontWeight:700,fontSize:14,color:'var(--gd-light)'}}>Product {i+1}</div>
-                  <button onClick={()=>removeProd(i)} style={{background:'none',border:'none',color:'var(--text-dim)',cursor:'pointer',padding:4}}><IconX/></button>
-                </div>
-                <div className="form-group" style={{marginBottom:10}}>
-                  <select className="form-select" value={pd.pid} onChange={e=>updateProd(i,'pid',e.target.value)}>
-                    {cropProds.map(p=><option key={p.id} value={p.id}>{p.name} · {p.brand}</option>)}
-                  </select>
-                </div>
-                <div className="form-group" style={{marginBottom:8}}>
-                  <label className="form-label">Rating</label>
-                  <div className="rating-input">{[1,2,3,4,5].map(n=><span key={n} className={`rating-star ${n<=pd.rating?'filled':''}`} style={{fontSize:24}} onClick={()=>updateProd(i,'rating',n)}>★</span>)}</div>
-                </div>
-                <textarea className="form-textarea" style={{minHeight:60,marginBottom:8}} placeholder="Notes on this product…" value={pd.notes} onChange={e=>updateProd(i,'notes',e.target.value)}/>
-                <div>
-                  <label className="form-label">Photos for this product</label>
-                  <div className="photo-upload-area" style={{padding:'10px',fontSize:12}} onClick={()=>{
-                    const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.multiple=true;
-                    inp.onchange=e=>handleProdFiles(e,i); inp.click()
-                  }}>📷 Add photos</div>
-                  {(pd.photoFiles||[]).length>0&&<div className="photo-preview-grid" style={{marginTop:6}}>{(pd.photoFiles||[]).map((p,j)=><div key={j} className="photo-preview-item"><img src={p.preview} alt=""/><button className="photo-remove" onClick={()=>{setForm(f=>{const arr=[...f.products_data];arr[i]={...arr[i],photoFiles:(arr[i].photoFiles||[]).filter((_,k)=>k!==j)};return {...f,products_data:arr}})}}>×</button></div>)}</div>}
-                </div>
+          {form.products_data.map((pd,i)=>(
+            <div key={i} className="card" style={{marginBottom:10}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                <div style={{fontFamily:'Barlow Condensed',fontWeight:700,fontSize:14,color:'var(--gd-light)'}}>Product {i+1}</div>
+                <button onClick={()=>removeProd(i)} style={{background:'none',border:'none',color:'var(--text-dim)',cursor:'pointer',padding:4}}><IconX/></button>
               </div>
-            )
-          })}
-
+              <div className="form-group" style={{marginBottom:10}}>
+                <select className="form-select" value={pd.pid} onChange={e=>updateProd(i,'pid',e.target.value)}>
+                  {cropProds.map(p=><option key={p.id} value={p.id}>{p.name} · {p.brand}</option>)}
+                </select>
+              </div>
+              <div className="form-group" style={{marginBottom:8}}>
+                <label className="form-label">Rating</label>
+                <div className="rating-input">{[1,2,3,4,5].map(n=><span key={n} className={`rating-star ${n<=pd.rating?'filled':''}`} style={{fontSize:24}} onClick={()=>updateProd(i,'rating',n)}>★</span>)}</div>
+              </div>
+              <textarea className="form-textarea" style={{minHeight:60,marginBottom:8}} placeholder="Notes on this product…" value={pd.notes} onChange={e=>updateProd(i,'notes',e.target.value)}/>
+              <div>
+                <label className="form-label">Photos for this product</label>
+                <div className="photo-upload-area" style={{padding:'10px',fontSize:12}} onClick={()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.multiple=true; inp.onchange=e=>handleProdFiles(e,i); inp.click() }}>📷 Add photos</div>
+                {(pd.photoFiles||[]).length>0&&<div className="photo-preview-grid" style={{marginTop:6}}>{(pd.photoFiles||[]).map((p,j)=><div key={j} className="photo-preview-item"><img src={p.preview} alt=""/><button className="photo-remove" onClick={()=>{setForm(f=>{const arr=[...f.products_data];arr[i]={...arr[i],photoFiles:(arr[i].photoFiles||[]).filter((_,k)=>k!==j)};return {...f,products_data:arr}})}}>×</button></div>)}</div>}
+              </div>
+            </div>
+          ))}
           <button className="btn btn-primary btn-full" onClick={save} disabled={saving||form.products_data.length<minProducts}>
             {saving?'Saving…':`Save ${isPKP?'PKP':'PXP'} Entry`}
           </button>
@@ -838,21 +879,19 @@ export default function CropLytics() {
     )
   }
 
-  // ── DETAIL MODAL ──
+  // ── DETAIL MODALS ──
   function DetailModal({ type, data }) {
     if (type==='product') {
       const scoreKeys = data.crop==='Corn'?CORN_SCORES:data.crop==='Soybean'?SOY_SCORES:WHEAT_SCORES
       const relObs = observations.filter(o=>o.product_id===data.id)
       return (
-        <div className="modal-overlay" onClick={()=>setShowDetail(null)}>
-          <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-handle"/>
-            <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:16}}>
-              <div><div className="modal-title" style={{marginBottom:4}}>{data.name}</div><CropTag crop={data.crop}/></div>
-              <div style={{display:'flex',gap:6,alignItems:'center'}}>
-                {data.is_new&&<span className="new-badge">NEW</span>}
-                <button className="btn btn-ghost btn-sm" onClick={()=>{setShowDetail(null);setEditProduct(data);setShowProductModal(true)}}><IconEdit/></button>
-              </div>
+        <div className="modal-overlay">
+          <div className="modal">
+            <ModalHeader title={data.name} onBack={()=>setShowDetail(null)}/>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
+              <CropTag crop={data.crop}/>
+              {data.is_new&&<span className="new-badge">NEW 2026</span>}
+              {isAdmin&&<button className="btn btn-ghost btn-sm" style={{marginLeft:'auto'}} onClick={()=>{setShowDetail(null);setEditProduct(data);setShowProductModal(true)}}><IconEdit/> Edit</button>}
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8,marginBottom:16}}>
               {[['Brand',data.brand],['Maturity',data.maturity],['Tech',(data.technologies||[]).join(', ')||'—']].map(([l,v])=>(
@@ -906,10 +945,9 @@ export default function CropLytics() {
     if (type==='obs') {
       const prod=products.find(p=>p.id===data.product_id)
       return (
-        <div className="modal-overlay" onClick={()=>setShowDetail(null)}>
-          <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-handle"/>
-            <div className="modal-title">{prod?.name||'Observation'}</div>
+        <div className="modal-overlay">
+          <div className="modal">
+            <ModalHeader title={prod?.name||'Observation'} onBack={()=>setShowDetail(null)}/>
             {prod&&<div style={{marginBottom:12}}><CropTag crop={prod.crop}/></div>}
             <div style={{display:'flex',gap:16,marginBottom:14,flexWrap:'wrap'}}>
               <div><div style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>Date</div><div style={{fontSize:14}}>{fmtDate(data.date)}</div></div>
@@ -927,20 +965,27 @@ export default function CropLytics() {
 
     if (type==='plot') {
       return (
-        <div className="modal-overlay" onClick={()=>setShowDetail(null)}>
-          <div className="modal" onClick={e=>e.stopPropagation()}>
-            <div className="modal-handle"/>
-            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:6}}>
+        <div className="modal-overlay">
+          <div className="modal">
+            <ModalHeader title={data.field_name} onBack={()=>setShowDetail(null)}/>
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
               <span className={`crop-tag ${data.type==='pkp'?'corn':'soybean'}`}>{data.type?.toUpperCase()}</span>
               <span style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>{data.crop}</span>
             </div>
-            <div className="modal-title">{data.field_name}</div>
             <div style={{display:'flex',gap:16,marginBottom:14,flexWrap:'wrap'}}>
               <div><div style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>Date</div><div style={{fontSize:14}}>{fmtDate(data.date)}</div></div>
               <div><div style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>Stage</div><div style={{fontSize:14}}>{data.growth_stage||'—'}</div></div>
               <div><div style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>Location</div><div style={{fontSize:14}}>{data.location||'—'}</div></div>
             </div>
-            {data.gps&&<div style={{marginBottom:12,fontSize:12,color:'var(--gd-light)'}}>📍 {data.gps.address||`${data.gps.lat}, ${data.gps.lng}`}</div>}
+            {data.gps&&(
+              <div style={{marginBottom:14}}>
+                <div style={{fontSize:12,color:'var(--gd-light)',marginBottom:8}}>
+                  📍 {data.gps.lat}, {data.gps.lng}
+                  {data.gps.address&&<div style={{fontSize:11,color:'var(--text-dim)',marginTop:2}}>{data.gps.address}</div>}
+                </div>
+                <GoogleMapsButton gps={data.gps}/>
+              </div>
+            )}
             {data.field_notes&&<div style={{fontSize:14,color:'var(--text-muted)',marginBottom:14}}>{data.field_notes}</div>}
             {data.photos?.length>0&&<div className="photo-preview-grid" style={{marginBottom:14}}>{data.photos.map((url,i)=><div key={i} className="photo-preview-item" onClick={()=>setLightboxUrl(url)}><img src={url} alt=""/></div>)}</div>}
             {data.products_data?.length>0&&<>
@@ -993,7 +1038,7 @@ export default function CropLytics() {
               </div>
               <div className="header-wordmark">
                 <div className="app-name">Pioneer <span>CropLytics</span></div>
-                <div className="app-sub">Indiana · Field Team</div>
+                <div className="app-sub">Indiana · Field Team {isAdmin&&'· Admin'}</div>
               </div>
             </div>
             <div className="season-badge">2026</div>
@@ -1001,11 +1046,10 @@ export default function CropLytics() {
           {user&&(
             <div className="user-pill" onClick={()=>{if(confirm('Switch user?')){localStorage.removeItem('cl_user');setUser(null);setShowOnboard(true)}}}>
               <div className="user-avatar">{initials(user.name)}</div>
-              {user.name} · {user.role}
+              {user.name} · {user.role}{isAdmin?' 🔑':''}
             </div>
           )}
         </div>
-
         <div className="app-content">
           {loading
             ? <div className="loading-full"><div className="spinner"/></div>
@@ -1017,7 +1061,6 @@ export default function CropLytics() {
               </>
           }
         </div>
-
         <div className="tab-bar">
           {[
             {id:'dashboard',label:'Dashboard',icon:<IconHome/>},
@@ -1031,12 +1074,10 @@ export default function CropLytics() {
           ))}
         </div>
       </div>
-
       {showProductModal&&<ProductForm/>}
       {showObsModal&&<AddObsModal/>}
       {showPlotModal&&<AddPlotModal/>}
       {showDetail&&<DetailModal type={showDetail.type} data={showDetail.data}/>}
-
       {lightboxUrl&&(
         <div className="lightbox" onClick={()=>setLightboxUrl(null)}>
           <button className="lightbox-close" onClick={()=>setLightboxUrl(null)}><IconX/></button>
@@ -1047,3 +1088,5 @@ export default function CropLytics() {
     </>
   )
 }
+ENDOFFILE
+echo "Lines: $(wc -l < /home/claude/croplytics2/pages/index.js)"
