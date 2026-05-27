@@ -1088,5 +1088,3 @@ export default function CropLytics() {
     </>
   )
 }
-ENDOFFILE
-echo "Lines: $(wc -l < /home/claude/croplytics2/pages/index.js)"
