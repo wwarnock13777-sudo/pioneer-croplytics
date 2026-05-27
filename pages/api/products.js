@@ -14,10 +14,24 @@ export default async function handler(req, res) {
       const { crop, name, brand, maturity, is_new, technologies, selling_points, notes, scores, placement, entered_by, entered_by_role } = req.body
       const rows = await sql`
         INSERT INTO products (crop, name, brand, maturity, is_new, technologies, selling_points, notes, scores, placement, entered_by, entered_by_role)
-        VALUES (${crop}, ${name}, ${brand || 'Pioneer'}, ${maturity || ''}, ${!!is_new}, ${technologies || []}, ${selling_points || ''}, ${notes || ''}, ${JSON.stringify(scores || {})}, ${JSON.stringify(placement || {})}, ${entered_by || ''}, ${entered_by_role || ''})
+        VALUES (${crop}, ${name}, ${brand||'Pioneer'}, ${maturity||''}, ${!!is_new}, ${technologies||[]}, ${selling_points||''}, ${notes||''}, ${JSON.stringify(scores||{})}, ${JSON.stringify(placement||{})}, ${entered_by||''}, ${entered_by_role||''})
         RETURNING *
       `
       return res.status(201).json(rows[0])
+    }
+
+    if (req.method === 'PATCH') {
+      const { id } = req.query
+      const { crop, name, brand, maturity, is_new, technologies, selling_points, notes, scores, placement } = req.body
+      const rows = await sql`
+        UPDATE products SET
+          crop=${crop}, name=${name}, brand=${brand||'Pioneer'}, maturity=${maturity||''},
+          is_new=${!!is_new}, technologies=${technologies||[]},
+          selling_points=${selling_points||''}, notes=${notes||''},
+          scores=${JSON.stringify(scores||{})}, placement=${JSON.stringify(placement||{})}
+        WHERE id=${id} RETURNING *
+      `
+      return res.json(rows[0])
     }
 
     if (req.method === 'DELETE') {
