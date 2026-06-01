@@ -11,10 +11,10 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const { product_id, date, growth_stage, location, rating, notes, photos, entered_by, entered_by_role } = req.body
+      const { product_id, date, growth_stage, location, rating, notes, photos, gps, entered_by, entered_by_role } = req.body
       const rows = await sql`
-        INSERT INTO observations (product_id, date, growth_stage, location, rating, notes, photos, entered_by, entered_by_role)
-        VALUES (${product_id||null}, ${date}, ${growth_stage||''}, ${location||''}, ${rating||0}, ${notes||''}, ${photos||[]}, ${entered_by||''}, ${entered_by_role||''})
+        INSERT INTO observations (product_id, date, growth_stage, location, rating, notes, photos, gps, entered_by, entered_by_role)
+        VALUES (${product_id||null}, ${date}, ${growth_stage||''}, ${location||''}, ${rating||0}, ${notes||''}, ${photos||[]}, ${JSON.stringify(gps||null)}, ${entered_by||''}, ${entered_by_role||''})
         RETURNING *
       `
       return res.status(201).json(rows[0])
