@@ -111,8 +111,13 @@ function MapPinPicker({ onSelect, initial }) {
       const L = window.L
       const center = coords ? [parseFloat(coords.lat), parseFloat(coords.lng)] : [40.2672, -86.1349] // Indiana center
       const map = L.map(mapRef.current, { zoomControl: true }).setView(center, coords ? 14 : 7)
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors', maxZoom: 19
+      // Satellite base layer
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Imagery © Esri', maxZoom: 19
+      }).addTo(map)
+      // Street/label overlay on top
+      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+        attribution: '', maxZoom: 19, opacity: 1
       }).addTo(map)
       // Custom green marker
       const greenIcon = L.divIcon({
