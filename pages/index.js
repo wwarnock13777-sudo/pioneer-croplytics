@@ -847,8 +847,8 @@ export default function CropLytics() {
           <div className="form-group"><label className="form-label">Observation Notes</label><textarea className="form-textarea" style={{minHeight:100}} placeholder="What did you observe today?" value={form.notes} onChange={e=>set('notes',e.target.value)}/></div>
           <div className="form-group">
             <label className="form-label">Photos</label>
-            <div className="photo-upload-area" onClick={()=>fileRef.current?.click()}><div style={{fontSize:24,marginBottom:4}}>📷</div>Tap to add field photos</div>
-            <input ref={fileRef} type="file" accept="image/*" multiple capture="environment" style={{display:'none'}} onChange={handleFiles}/>
+            <div className="photo-upload-area" onClick={()=>fileRef.current?.click()}><div style={{fontSize:24,marginBottom:4}}>📷</div><div style={{fontWeight:600,marginBottom:2}}>Add Photos</div><div style={{fontSize:11,color:"var(--text-dim)"}}>Take a photo or choose from camera roll</div></div>
+            <input ref={fileRef} type="file" accept="image/*" multiple style={{display:'none'}} onChange={handleFiles}/>
             {photos.length>0&&<div className="photo-preview-grid">{photos.map((p,i)=><div key={i} className="photo-preview-item"><img src={p.preview} alt=""/><button className="photo-remove" onClick={()=>setPhotos(prev=>prev.filter((_,j)=>j!==i))}>×</button></div>)}</div>}
           </div>
           <button className="btn btn-primary btn-full" onClick={save} disabled={saving}>{saving?'Uploading & Saving…':'Save Observation'}</button>
@@ -932,8 +932,8 @@ export default function CropLytics() {
           <div className="form-group"><label className="form-label">Field Notes</label><textarea className="form-textarea" placeholder="Overall field observations…" value={form.field_notes} onChange={e=>set('field_notes',e.target.value)}/></div>
           <div className="form-group">
             <label className="form-label">Field Photos</label>
-            <div className="photo-upload-area" onClick={()=>fileRef.current?.click()}><div style={{fontSize:24,marginBottom:4}}>📷</div>Tap to add field photos</div>
-            <input ref={fileRef} type="file" accept="image/*" multiple capture="environment" style={{display:'none'}} onChange={handleFieldFiles}/>
+            <div className="photo-upload-area" onClick={()=>fileRef.current?.click()}><div style={{fontSize:24,marginBottom:4}}>📷</div><div style={{fontWeight:600,marginBottom:2}}>Add Photos</div><div style={{fontSize:11,color:"var(--text-dim)"}}>Take a photo or choose from camera roll</div></div>
+            <input ref={fileRef} type="file" accept="image/*" multiple style={{display:'none'}} onChange={handleFieldFiles}/>
             {fieldPhotos.length>0&&<div className="photo-preview-grid">{fieldPhotos.map((p,i)=><div key={i} className="photo-preview-item"><img src={p.preview} alt=""/><button className="photo-remove" onClick={()=>setFieldPhotos(prev=>prev.filter((_,j)=>j!==i))}>×</button></div>)}</div>}
           </div>
           <div className="divider"/>
@@ -962,7 +962,7 @@ export default function CropLytics() {
               <textarea className="form-textarea" style={{minHeight:60,marginBottom:8}} placeholder="Notes on this product…" value={pd.notes} onChange={e=>updateProd(i,'notes',e.target.value)}/>
               <div>
                 <label className="form-label">Photos for this product</label>
-                <div className="photo-upload-area" style={{padding:'10px',fontSize:12}} onClick={()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.multiple=true; inp.onchange=e=>handleProdFiles(e,i); inp.click() }}>📷 Add photos</div>
+                <div className="photo-upload-area" style={{padding:'10px',fontSize:12}} onClick={()=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.multiple=true; inp.onchange=e=>handleProdFiles(e,i); inp.click() }}>📷 Take photo or choose from roll</div>
                 {(pd.photoFiles||[]).length>0&&<div className="photo-preview-grid" style={{marginTop:6}}>{(pd.photoFiles||[]).map((p,j)=><div key={j} className="photo-preview-item"><img src={p.preview} alt=""/><button className="photo-remove" onClick={()=>{setForm(f=>{const arr=[...f.products_data];arr[i]={...arr[i],photoFiles:(arr[i].photoFiles||[]).filter((_,k)=>k!==j)};return {...f,products_data:arr}})}}>×</button></div>)}</div>}
               </div>
             </div>
