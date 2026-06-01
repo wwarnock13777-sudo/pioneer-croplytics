@@ -244,7 +244,7 @@ function MapPinPicker({ onSelect, initial }) {
           flexDirection:'column',
           background:'var(--bg)'
         }}>
-          <div style={{background:'rgba(0,0,0,0.6)',padding:'8px 12px',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+          <div style={{background:'rgba(0,0,0,0.6)',padding:'8px 12px',paddingTop: fullscreen ? 'max(8px, env(safe-area-inset-top, 8px))' : '8px',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
             <span style={{fontSize:11,color:'var(--text-muted)'}}>📍 Tap to drop pin · Drag to move</span>
             <button
               onClick={()=>{ setFullscreen(f=>!f); setTimeout(()=>leafletMap.current?.invalidateSize(),150) }}
