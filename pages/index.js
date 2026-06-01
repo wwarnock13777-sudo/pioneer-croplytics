@@ -229,12 +229,31 @@ function MapPinPicker({ onSelect, initial }) {
         </button>
       </div>
       {showMap && (
-        <div style={{border:'1px solid var(--border-green)',borderRadius:10,overflow:'hidden',marginBottom:6}}>
-          <div style={{background:'rgba(0,0,0,0.3)',padding:'6px 10px',fontSize:11,color:'var(--text-muted)',textAlign:'center'}}>
-            Tap anywhere on the map to drop a pin · Drag pin to move it
+        <div style={{
+          border:'1px solid var(--border-green)',
+          borderRadius: fullscreen ? 0 : 10,
+          overflow:'hidden',
+          marginBottom: fullscreen ? 0 : 6,
+          position: fullscreen ? 'fixed' : 'relative',
+          top: fullscreen ? 0 : 'auto',
+          left: fullscreen ? 0 : 'auto',
+          right: fullscreen ? 0 : 'auto',
+          bottom: fullscreen ? 0 : 'auto',
+          zIndex: fullscreen ? 9999 : 'auto',
+          display:'flex',
+          flexDirection:'column',
+          background:'var(--bg)'
+        }}>
+          <div style={{background:'rgba(0,0,0,0.6)',padding:'8px 12px',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+            <span style={{fontSize:11,color:'var(--text-muted)'}}>📍 Tap to drop pin · Drag to move</span>
+            <button
+              onClick={()=>{ setFullscreen(f=>!f); setTimeout(()=>leafletMap.current?.invalidateSize(),150) }}
+              style={{background:'#2E7D32',border:'none',borderRadius:6,padding:'5px 12px',color:'white',fontSize:12,fontFamily:'Barlow Condensed',fontWeight:700,cursor:'pointer',letterSpacing:0.5}}>
+              {fullscreen ? '✕ EXIT FULLSCREEN' : '⛶ FULLSCREEN'}
+            </button>
           </div>
-          <div ref={mapRef} style={{height:280,width:'100%'}}/>
-          <div style={{padding:'8px 10px',display:'flex',gap:6}}>
+          <div ref={mapRef} style={{flex: fullscreen ? 1 : 'none', height: fullscreen ? undefined : 280, width:'100%'}}/>
+          <div style={{padding:'8px 10px',display:'flex',gap:6,background:'var(--bg-card)',flexShrink:0}}>
             <input className="form-input" style={{flex:1,padding:'7px 10px',fontSize:13}} placeholder="Search address or farm name…" value={searchVal} onChange={e=>setSearchVal(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchAddress()}/>
             <button className="btn btn-primary btn-sm" onClick={searchAddress}>Go</button>
           </div>
