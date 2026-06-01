@@ -88,6 +88,7 @@ async function uploadPhoto(file) {
 
 function MapPinPicker({ onSelect, initial }) {
   const [showMap, setShowMap] = useState(false)
+  const [fullscreen, setFullscreen] = useState(false)
   const [coords, setCoords] = useState(initial || null)
   const [loading, setLoading] = useState(false)
   const [searchVal, setSearchVal] = useState('')
