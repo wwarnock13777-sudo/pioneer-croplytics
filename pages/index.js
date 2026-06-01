@@ -87,60 +87,155 @@ async function uploadPhoto(file) {
 }
 
 function MapPinPicker({ onSelect, initial }) {
-  const [active, setActive] = useState(false)
+  const [showMap, setShowMap] = useState(false)
   const [coords, setCoords] = useState(initial || null)
   const [loading, setLoading] = useState(false)
-  const [address, setAddress] = useState('')
+  const [searchVal, setSearchVal] = useState('')
+  const mapRef = useRef(null)
+  const leafletMap = useRef(null)
+  const markerRef = useRef(null)
 
-  async function getCurrentLocation() {
-    setLoading(true)
+  useEffect(() => {
+    if (!showMap) return
+    // Load Leaflet CSS
+    if (!document.getElementById('leaflet-css')) {
+      const link = document.createElement('link')
+      link.id = 'leaflet-css'
+      link.rel = 'stylesheet'
+      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+      document.head.appendChild(link)
+    }
+    // Load Leaflet JS
+    function initMap() {
+      if (!mapRef.current || leafletMap.current) return
+      const L = window.L
+      const center = coords ? [parseFloat(coords.lat), parseFloat(coords.lng)] : [40.2672, -86.1349] // Indiana center
+      const map = L.map(mapRef.current, { zoomControl: true }).setView(center, coords ? 14 : 7)
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors', maxZoom: 19
+      }).addTo(map)
+      // Custom green marker
+      const greenIcon = L.divIcon({
+        html: `<div style="width:28px;height:28px;background:#2E7D32;border:3px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div>`,
+        iconSize: [28, 28], iconAnchor: [14, 28], className: ''
+      })
+      if (coords) {
+        markerRef.current = L.marker([parseFloat(coords.lat), parseFloat(coords.lng)], {icon: greenIcon, draggable: true}).addTo(map)
+        markerRef.current.on('dragend', async e => {
+          const pos = e.target.getLatLng()
+          await reverseGeocode(pos.lat.toFixed(6), pos.lng.toFixed(6))
+        })
+      }
+      map.on('click', async e => {
+        const lat = e.latlng.lat.toFixed(6)
+        const lng = e.latlng.lng.toFixed(6)
+        if (markerRef.current) markerRef.current.remove()
+        markerRef.current = L.marker([parseFloat(lat), parseFloat(lng)], {icon: greenIcon, draggable: true}).addTo(map)
+        markerRef.current.on('dragend', async ev => {
+          const pos = ev.target.getLatLng()
+          await reverseGeocode(pos.lat.toFixed(6), pos.lng.toFixed(6))
+        })
+        await reverseGeocode(lat, lng)
+      })
+      leafletMap.current = map
+      setTimeout(() => map.invalidateSize(), 100)
+    }
+    if (window.L) { initMap() }
+    else {
+      const script = document.createElement('script')
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
+      script.onload = initMap
+      document.head.appendChild(script)
+    }
+    return () => { if (leafletMap.current) { leafletMap.current.remove(); leafletMap.current = null; markerRef.current = null } }
+  }, [showMap])
+
+  async function reverseGeocode(lat, lng) {
     try {
-      const pos = await new Promise((res,rej) => navigator.geolocation.getCurrentPosition(res,rej,{timeout:10000}))
-      const lat = pos.coords.latitude.toFixed(6)
-      const lng = pos.coords.longitude.toFixed(6)
       const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
       const data = await resp.json()
       const addr = data.display_name || `${lat}, ${lng}`
       const result = { lat, lng, address: addr }
       setCoords(result); onSelect(result)
+    } catch(e) {
+      const result = { lat, lng, address: `${lat}, ${lng}` }
+      setCoords(result); onSelect(result)
+    }
+  }
+
+  async function useMyLocation() {
+    setLoading(true)
+    try {
+      const pos = await new Promise((res,rej) => navigator.geolocation.getCurrentPosition(res,rej,{timeout:10000}))
+      const lat = pos.coords.latitude.toFixed(6)
+      const lng = pos.coords.longitude.toFixed(6)
+      await reverseGeocode(lat, lng)
+      if (leafletMap.current && window.L) {
+        leafletMap.current.setView([parseFloat(lat), parseFloat(lng)], 15)
+        const greenIcon = window.L.divIcon({
+          html: `<div style="width:28px;height:28px;background:#2E7D32;border:3px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div>`,
+          iconSize: [28,28], iconAnchor: [14,28], className:''
+        })
+        if (markerRef.current) markerRef.current.remove()
+        markerRef.current = window.L.marker([parseFloat(lat), parseFloat(lng)], {icon: greenIcon, draggable: true}).addTo(leafletMap.current)
+      }
+      setShowMap(true)
     } catch(e) { alert('Could not get location. Please allow location access.') }
     setLoading(false)
   }
 
-  async function searchAddress(q) {
-    if (!q.trim()) return
+  async function searchAddress() {
+    if (!searchVal.trim()) return
     setLoading(true)
     try {
-      const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`)
+      const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchVal)}&limit=1`)
       const data = await resp.json()
       if (data[0]) {
-        const result = { lat: parseFloat(data[0].lat).toFixed(6), lng: parseFloat(data[0].lon).toFixed(6), address: data[0].display_name }
-        setCoords(result); onSelect(result)
-      }
+        const lat = parseFloat(data[0].lat).toFixed(6)
+        const lng = parseFloat(data[0].lon).toFixed(6)
+        await reverseGeocode(lat, lng)
+        if (leafletMap.current && window.L) {
+          leafletMap.current.setView([parseFloat(lat), parseFloat(lng)], 14)
+          const greenIcon = window.L.divIcon({
+            html: `<div style="width:28px;height:28px;background:#2E7D32;border:3px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div>`,
+            iconSize:[28,28], iconAnchor:[14,28], className:''
+          })
+          if (markerRef.current) markerRef.current.remove()
+          markerRef.current = window.L.marker([parseFloat(lat), parseFloat(lng)], {icon: greenIcon, draggable: true}).addTo(leafletMap.current)
+        }
+      } else { alert('Location not found. Try a more specific address.') }
     } catch(e) {}
     setLoading(false)
   }
 
   return (
     <div style={{marginBottom:14}}>
-      <label className="form-label">📍 GPS Location</label>
+      <label className="form-label">📍 Drop a Pin</label>
       {coords && (
-        <div style={{background:'rgba(74,140,84,0.1)',border:'1px solid var(--border-green)',borderRadius:8,padding:'8px 12px',marginBottom:8,fontSize:12,color:'var(--text-muted)'}}>
-          <div style={{fontFamily:'Barlow Condensed',fontWeight:700,color:'var(--gd-light)',marginBottom:2}}>📍 {coords.lat}, {coords.lng}</div>
-          <div style={{fontSize:11,color:'var(--text-dim)'}}>{coords.address}</div>
+        <div style={{background:'rgba(74,140,84,0.1)',border:'1px solid var(--border-green)',borderRadius:8,padding:'8px 12px',marginBottom:8}}>
+          <div style={{fontFamily:'Barlow Condensed',fontWeight:700,color:'var(--gd-light)',fontSize:13}}>📍 {coords.lat}, {coords.lng}</div>
+          <div style={{fontSize:11,color:'var(--text-dim)',marginTop:2,lineHeight:1.4}}>{coords.address}</div>
           <button onClick={()=>{setCoords(null);onSelect(null)}} style={{marginTop:4,background:'none',border:'none',color:'var(--text-dim)',cursor:'pointer',fontSize:11,padding:0}}>× Remove pin</button>
         </div>
       )}
-      <div style={{display:'flex',gap:8}}>
-        <button className="btn btn-secondary btn-sm" onClick={getCurrentLocation} disabled={loading} style={{flex:1}}>
-          {loading ? '...' : '📍 Use My Location'}
+      <div style={{display:'flex',gap:6,marginBottom:6}}>
+        <button className="btn btn-secondary btn-sm" onClick={()=>setShowMap(!showMap)} style={{flex:1}}>
+          {showMap ? '🗺 Hide Map' : '🗺 Open Map'}
         </button>
-        <button className="btn btn-ghost btn-sm" onClick={()=>setActive(!active)} style={{flex:1}}>🔍 Search</button>
+        <button className="btn btn-ghost btn-sm" onClick={useMyLocation} disabled={loading} style={{flex:1}}>
+          {loading ? '...' : '📍 My Location'}
+        </button>
       </div>
-      {active && (
-        <div style={{marginTop:8,display:'flex',gap:6}}>
-          <input className="form-input" placeholder="e.g. Smith Farm, Indiana" value={address} onChange={e=>setAddress(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchAddress(address)} style={{flex:1}}/>
-          <button className="btn btn-primary btn-sm" onClick={()=>searchAddress(address)}>Go</button>
+      {showMap && (
+        <div style={{border:'1px solid var(--border-green)',borderRadius:10,overflow:'hidden',marginBottom:6}}>
+          <div style={{background:'rgba(0,0,0,0.3)',padding:'6px 10px',fontSize:11,color:'var(--text-muted)',textAlign:'center'}}>
+            Tap anywhere on the map to drop a pin · Drag pin to move it
+          </div>
+          <div ref={mapRef} style={{height:280,width:'100%'}}/>
+          <div style={{padding:'8px 10px',display:'flex',gap:6}}>
+            <input className="form-input" style={{flex:1,padding:'7px 10px',fontSize:13}} placeholder="Search address or farm name…" value={searchVal} onChange={e=>setSearchVal(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchAddress()}/>
+            <button className="btn btn-primary btn-sm" onClick={searchAddress}>Go</button>
+          </div>
         </div>
       )}
     </div>
