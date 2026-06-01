@@ -792,7 +792,7 @@ export default function CropLytics() {
 
   // ── ADD OBSERVATION ──
   function AddObsModal() {
-    const [form, setForm] = useState({product_id:'', date:new Date().toISOString().split('T')[0], growth_stage:'', location:'', rating:0, notes:''})
+    const [form, setForm] = useState({product_id:'', date:new Date().toISOString().split('T')[0], growth_stage:'', location:'', rating:0, notes:'', gps:null})
     const [photos, setPhotos] = useState([])
     const [saving, setSaving] = useState(false)
     const fileRef = useRef()
@@ -838,6 +838,7 @@ export default function CropLytics() {
             </div>
           </div>
           <div className="form-group"><label className="form-label">Location / Field Name</label><input className="form-input" placeholder="e.g. Smith Farm North" value={form.location} onChange={e=>set('location',e.target.value)}/></div>
+          <MapPinPicker onSelect={gps=>set('gps',gps)} initial={form.gps}/>
           <div className="form-group">
             <label className="form-label">Rating</label>
             <div className="rating-input">{[1,2,3,4,5].map(n=><span key={n} className={`rating-star ${n<=form.rating?'filled':''}`} onClick={()=>set('rating',n)}>★</span>)}</div>
@@ -1061,7 +1062,15 @@ export default function CropLytics() {
               <div><div style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>Stage</div><div style={{fontSize:14}}>{data.growth_stage||'—'}</div></div>
               <div><div style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>Rating</div><Stars n={data.rating} size={16}/></div>
             </div>
-            {data.location&&<div style={{marginBottom:12,fontSize:13,color:'var(--text-muted)'}}>📍 {data.location}</div>}
+            {data.location&&<div style={{marginBottom:8,fontSize:13,color:'var(--text-muted)'}}>📍 {data.location}</div>}
+            {data.gps&&(
+              <div style={{marginBottom:12}}>
+                <div style={{fontSize:12,color:'var(--gd-light)',marginBottom:6}}>📍 {data.gps.lat}, {data.gps.lng}
+                  {data.gps.address&&<div style={{fontSize:11,color:'var(--text-dim)',marginTop:2}}>{data.gps.address}</div>}
+                </div>
+                <GoogleMapsButton gps={data.gps}/>
+              </div>
+            )}
             {data.notes&&<div style={{fontSize:14,color:'var(--text)',lineHeight:1.6,marginBottom:14}}>{data.notes}</div>}
             {data.photos?.length>0&&<div className="photo-preview-grid">{data.photos.map((url,i)=><div key={i} className="photo-preview-item" style={{cursor:'pointer'}} onClick={()=>setLightboxUrl(url)}><img src={url} alt=""/></div>)}</div>}
             <div className="entry-meta" style={{marginTop:14}}>By {data.entered_by&&<span className="by">{data.entered_by}</span>} {data.entered_by_role&&`· ${data.entered_by_role}`}</div>
