@@ -47,8 +47,8 @@ function ScoreBar({ val, color='var(--gd-light)' }) {
 function ModalHeader({ title, onBack }) {
   return (
     <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
-      <button onClick={onBack} style={{background:'rgba(255,255,255,0.06)',border:'1px solid var(--border)',borderRadius:8,width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--text-muted)',flexShrink:0}}>
-        <IconBack/>
+      <button onClick={onBack} style={{background:'#CC0000',border:'none',borderRadius:8,height:36,padding:'0 14px',display:'flex',alignItems:'center',gap:5,cursor:'pointer',color:'white',flexShrink:0,fontFamily:'Barlow Condensed',fontWeight:700,fontSize:13,letterSpacing:0.5,boxShadow:'0 2px 8px rgba(204,0,0,0.4)'}}>
+        <IconBack/> BACK
       </button>
       <div style={{fontFamily:'Barlow Condensed',fontWeight:800,fontSize:22,color:'#fff'}}>{title}</div>
     </div>
@@ -1053,7 +1053,7 @@ export default function CropLytics() {
         <div className="modal-overlay">
           <div className="modal">
             <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
-              <button onClick={()=>setShowDetail(null)} style={{background:'rgba(255,255,255,0.06)',border:'1px solid var(--border)',borderRadius:8,width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--text-muted)',flexShrink:0}}><IconBack/></button>
+              <button onClick={()=>setShowDetail(null)} style={{background:'#CC0000',border:'none',borderRadius:8,height:36,padding:'0 14px',display:'flex',alignItems:'center',gap:5,cursor:'pointer',color:'white',flexShrink:0,fontFamily:'Barlow Condensed',fontWeight:700,fontSize:13,letterSpacing:0.5,boxShadow:'0 2px 8px rgba(204,0,0,0.4)'}}><IconBack/> BACK</button>
               <div style={{fontFamily:'Barlow Condensed',fontWeight:800,fontSize:22,color:'#fff',flex:1}}>{prod?.name||'Observation'}</div>
               {canDelete && <button onClick={deleteObs} style={{background:'rgba(200,0,0,0.15)',border:'1px solid rgba(200,0,0,0.3)',borderRadius:8,padding:'6px 12px',color:'#ff6b6b',fontSize:12,fontFamily:'Barlow Condensed',fontWeight:700,cursor:'pointer',flexShrink:0}}>Delete</button>}
             </div>
@@ -1093,7 +1093,7 @@ export default function CropLytics() {
         <div className="modal-overlay">
           <div className="modal">
             <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
-              <button onClick={()=>setShowDetail(null)} style={{background:'rgba(255,255,255,0.06)',border:'1px solid var(--border)',borderRadius:8,width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--text-muted)',flexShrink:0}}><IconBack/></button>
+              <button onClick={()=>setShowDetail(null)} style={{background:'#CC0000',border:'none',borderRadius:8,height:36,padding:'0 14px',display:'flex',alignItems:'center',gap:5,cursor:'pointer',color:'white',flexShrink:0,fontFamily:'Barlow Condensed',fontWeight:700,fontSize:13,letterSpacing:0.5,boxShadow:'0 2px 8px rgba(204,0,0,0.4)'}}><IconBack/> BACK</button>
               <div style={{fontFamily:'Barlow Condensed',fontWeight:800,fontSize:22,color:'#fff',flex:1}}>{data.field_name}</div>
               {canDelete && <button onClick={deletePlot} style={{background:'rgba(200,0,0,0.15)',border:'1px solid rgba(200,0,0,0.3)',borderRadius:8,padding:'6px 12px',color:'#ff6b6b',fontSize:12,fontFamily:'Barlow Condensed',fontWeight:700,cursor:'pointer',flexShrink:0}}>Delete</button>}
             </div>
