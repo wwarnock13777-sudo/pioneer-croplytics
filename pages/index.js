@@ -278,7 +278,7 @@ export default function CropLytics() {
   const [showPlotModal, setShowPlotModal] = useState(false)
   const [plotType, setPlotType] = useState('pkp')
   const [showDetail, setShowDetail] = useState(null)
-  const [productFilter, setProductFilter] = useState('All')
+  const [productFilter, setProductFilter] = useState('Corn')
   const [obsFilter, setObsFilter] = useState('All')
   const [lightboxUrl, setLightboxUrl] = useState(null)
   const toastRef = useRef(null)
@@ -415,7 +415,7 @@ export default function CropLytics() {
 
   // ── PRODUCTS ──
   function Products() {
-    const filtered = productFilter==='All' ? products : products.filter(p=>p.crop===productFilter)
+    const filtered = products.filter(p=>p.crop===productFilter).slice().sort((a,b)=>{ const am=parseFloat(a.maturity)||999; const bm=parseFloat(b.maturity)||999; return am-bm })
     return (
       <div>
         <div className="section-header">
@@ -428,7 +428,7 @@ export default function CropLytics() {
           </div>
         )}
         <div className="filter-tabs">
-          {['All','Corn','Soybean','Wheat'].map(f=><button key={f} className={`filter-tab ${productFilter===f?'active':''}`} onClick={()=>setProductFilter(f)}>{f}</button>)}
+          {['Corn','Soybean','Wheat'].map(f=><button key={f} className={`filter-tab ${productFilter===f?'active':''}`} onClick={()=>setProductFilter(f)}>{f}</button>)}
         </div>
         {filtered.length===0
           ? <div className="empty-state"><p>No products yet.{isAdmin?' Tap Add to get started.':''}</p></div>
