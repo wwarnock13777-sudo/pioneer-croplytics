@@ -15,13 +15,13 @@ const IconMap = () => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor
 const CROPS = ['Corn', 'Soybean', 'Wheat']
 const BRANDS = ['Pioneer', 'DeKalb', 'Channel', 'Dyna-Gro', 'Croplan', 'AgriGold', 'Brevant', 'Other']
 const CORN_SCORES = ['Stalk Strength','Mid-Season Brittle Stalk','Root Strength','Stress Emergence','Drought Tolerance','Staygreen','Test Weight','Plant Height','Ear Height','Tar Spot','Gray Leaf Spot','Northern Corn Leaf Blight','Southern Rust','Anthracnose Stalk Rot','Fusarium Ear Rot','Gibberella Ear Rot','Diplodia Ear Rot']
-const SOY_SCORES  = ['Yield','SCN Resistance','White Mold','Standability','Iron Deficiency','Phytophthora','SDS','Sudden Death Syndrome']
+const SOY_SCORES  = ['Harvest Standability','Field Emergence','Phytophthora Field Tolerance','White Mold','Sudden Death Syndrome','SCN Race 1','SCN Race 3','Charcoal Rot','Frogeye Leaf Spot','Canopy Width','Plant Height for Maturity']
 const WHEAT_SCORES= ['Yield','Test Weight','Disease Package','Winter Hardiness','Straw Strength','Heading Date','Flour Quality']
 const SOIL_TYPES  = ['Sandy','Sandy Loam','Loam','Silt Loam','Silty Clay Loam','Clay','Muck']
 const DRAINAGE    = ['Excessive','Well Drained','Moderately Well','Somewhat Poor','Poor','Very Poor']
 const YIELD_ZONES = ['High Yield (240+)','Moderate (200-240)','Low (170-200)','Stress / Dryland (<170)']
-const CORN_TECH   = ['PowerCore Enlist','Vorceed Enlist','AcreMax','Qrome','VT2P','VT4P','Trecepta','SmartStax','SmartStax Pro','Conventional']
-const SOY_TECH    = ['ENLIST E3','Roundup Ready 2 Xtend','LibertyLink','Conventional']
+const CORN_TECH   = ['PowerCore Enlist','PowerCore Ultra Enlist','Vorceed Enlist','AcreMax','Qrome','VT2P','VT4P','Trecepta','SmartStax','SmartStax Pro','Conventional']
+const SOY_TECH    = ['ENLIST E3','Plenish GLY','Plenish E3','Roundup Ready 2 Xtend','LibertyLink','Conventional']
 const STAGES_CORN = ['VE','V1','V2','V3','V4','V5','V6','V7','V8','V9','V10','VT','R1','R2','R3','R4','R5','R6']
 const STAGES_SOY  = ['VE','VC','V1','V2','V3','V4','V5','V6','R1','R2','R3','R4','R5','R6','R7','R8']
 const ADMIN_CODE  = 'KYLEQUICK'
@@ -442,6 +442,7 @@ export default function CropLytics() {
                   <div className="product-item-top" onClick={()=>setShowDetail({type:'product',data:p})}>
                     <div>
                       <div className="product-name">{p.name}</div>
+                      {(p.technologies||[]).length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:3,margin:'3px 0'}}>{(p.technologies||[]).map(t=><span key={t} style={{background:'rgba(74,140,84,0.15)',border:'1px solid var(--border-green)',borderRadius:20,padding:'1px 7px',fontSize:10,color:'var(--gd-light)',fontFamily:'Barlow Condensed',fontWeight:600}}>{t}</span>)}</div>}
                       <div className="product-maturity">{p.brand} · {p.maturity}</div>
                     </div>
                     <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
@@ -450,8 +451,6 @@ export default function CropLytics() {
                     </div>
                   </div>
                   <div className="score-bar">
-                    <span className="score-pill">Avg {avg}/9</span>
-                    <div className="score-dots">{Array.from({length:9}).map((_,i)=><div key={i} className={`score-dot ${i<avg?'filled'+(avg>=7?' high':''):''}`}/>)}</div>
                     <span style={{marginLeft:'auto',fontSize:11,color:'var(--text-dim)'}}>{obsCount} obs</span>
                   </div>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:8}}>
@@ -565,8 +564,7 @@ export default function CropLytics() {
         {label:'Brand', get:p=>p.brand||'—'},
         {label:'Technology', get:p=>(p.technologies||[]).join(', ')||'—'},
         {label:'Yield Zones', get:p=>(p.placement?.yieldZones||[]).join(', ')||'—'},
-        {label:'Field Obs Rating', get:p=>avgObs(p)},
-        ...scoreKeys.map(k=>({label:k, get:p=>(p.scores||{})[k]||0}))
+              ...scoreKeys.map(k=>({label:k, get:p=>(p.scores||{})[k]||0}))
       ]
 
       const html = `
@@ -674,8 +672,7 @@ export default function CropLytics() {
                   {label:'Brand', get:p=>p.brand||'—'},
                   {label:'Technology', get:p=>(p.technologies||[]).join(', ')||'—'},
                   {label:'Yield Zones', get:p=>(p.placement?.yieldZones||[]).join(', ')||'—'},
-                  {label:'Field Obs Rating', get:p=>avgObs(p)},
-                  ...scoreKeys.map(k=>({label:k, get:p=>(p.scores||{})[k]||0, isScore:true}))
+                                  ...scoreKeys.map(k=>({label:k, get:p=>(p.scores||{})[k]||0, isScore:true}))
                 ].map((row,ri)=>(
                   <tr key={ri} style={{background:ri%2===0?'rgba(255,255,255,0.02)':'transparent'}}>
                     <td style={{padding:'7px 10px',color:'var(--text-muted)',fontSize:12,borderBottom:'1px solid rgba(255,255,255,0.04)'}}>{row.label}</td>
@@ -762,20 +759,27 @@ export default function CropLytics() {
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">Maturity</label>
+              <label className="form-label">Maturity (CRM)</label>
               <input className="form-input" placeholder={form.crop==='Corn'?'110 RM':'3.8'} value={form.maturity} onChange={e=>set('maturity',e.target.value)}/>
             </div>
           </div>
+          {form.crop==='Corn'&&<>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <div className="form-group"><label className="form-label">Silk CRM</label><input className="form-input" placeholder="e.g. 107" value={form.crm_fields?.silk_crm||''} onChange={e=>set('crm_fields',{...form.crm_fields,silk_crm:e.target.value})}/></div>
+              <div className="form-group"><label className="form-label">Physiological CRM</label><input className="form-input" placeholder="e.g. 112" value={form.crm_fields?.physio_crm||''} onChange={e=>set('crm_fields',{...form.crm_fields,physio_crm:e.target.value})}/></div>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <div className="form-group"><label className="form-label">GDU's to Silk</label><input className="form-input" placeholder="e.g. 1380" value={form.crm_fields?.gdu_silk||''} onChange={e=>set('crm_fields',{...form.crm_fields,gdu_silk:e.target.value})}/></div>
+              <div className="form-group"><label className="form-label">GDU's to Phys. Maturity</label><input className="form-input" placeholder="e.g. 2650" value={form.crm_fields?.gdu_physio||''} onChange={e=>set('crm_fields',{...form.crm_fields,gdu_physio:e.target.value})}/></div>
+            </div>
+          </>}
           <div className="form-group" style={{display:'flex',alignItems:'center',gap:10}}>
             <input type="checkbox" id="isnew" checked={form.is_new} onChange={e=>set('is_new',e.target.checked)} style={{width:18,height:18}}/>
             <label htmlFor="isnew" style={{fontSize:14,color:'var(--text-muted)'}}>New for 2026 Season</label>
           </div>
           <div className="form-group">
-            <label className="form-label">Technology</label>
-            <select className="form-select" value={form.technologies[0]||''} onChange={e=>set('technologies',e.target.value?[e.target.value]:[])}>
-              <option value="">Select…</option>
-              {techOptions.map(t=><option key={t}>{t}</option>)}
-            </select>
+            <label className="form-label">Technology (select all that apply)</label>
+            <div className="chip-group">{techOptions.map(t=><button key={t} type="button" className={`chip ${(form.technologies||[]).includes(t)?'selected':''}`} onClick={()=>set('technologies',toggleArr(form.technologies||[],t))}>{t}</button>)}</div>
           </div>
           <div className="divider"/>
           <div className="card-title" style={{marginBottom:12}}>Agronomic Ratings (1–9)</div>
@@ -785,24 +789,54 @@ export default function CropLytics() {
               <input type="range" min="0" max="9" value={form.scores[k]||0} onChange={e=>setScore(k,e.target.value)}/>
             </div>
           ))}
+          {form.crop==='Soybean'&&<>
+            <div className="divider"/>
+            <div className="card-title" style={{marginBottom:12}}>Soybean Trait Details</div>
+            <div className="form-group">
+              <label className="form-label">Phytophthora Resistance Gene</label>
+              <div className="chip-group">{['1K','1C','3A','2'].map(v=><button key={v} type="button" className={`chip ${(form.soy_traits?.phyto_gene||[]).includes(v)?'selected':''}`} onClick={()=>set('soy_traits',{...form.soy_traits,phyto_gene:toggleArr(form.soy_traits?.phyto_gene||[],v)})}>{v}</button>)}</div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Brown Stem Rot Marker Predicted</label>
+              <div className="chip-group">{['MS','MT','HT'].map(v=><button key={v} type="button" className={`chip ${form.soy_traits?.bsr===v?'selected':''}`} onClick={()=>set('soy_traits',{...form.soy_traits,bsr:v})}>{v}</button>)}</div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">SCN Resistance Source</label>
+              <div className="chip-group">{['PI88788','Peking'].map(v=><button key={v} type="button" className={`chip ${form.soy_traits?.scn_source===v?'selected':''}`} onClick={()=>set('soy_traits',{...form.soy_traits,scn_source:v})}>{v}</button>)}</div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Flower Color</label>
+              <div className="chip-group">{['White','Purple'].map(v=><button key={v} type="button" className={`chip ${form.soy_traits?.flower_color===v?'selected':''}`} onClick={()=>set('soy_traits',{...form.soy_traits,flower_color:v})}>{v}</button>)}</div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Hila Color</label>
+              <div className="chip-group">{['Black','Brown','Tan','Yellow'].map(v=><button key={v} type="button" className={`chip ${form.soy_traits?.hila_color===v?'selected':''}`} onClick={()=>set('soy_traits',{...form.soy_traits,hila_color:v})}>{v}</button>)}</div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Pod Color</label>
+              <div className="chip-group">{['Brown','Tan'].map(v=><button key={v} type="button" className={`chip ${form.soy_traits?.pod_color===v?'selected':''}`} onClick={()=>set('soy_traits',{...form.soy_traits,pod_color:v})}>{v}</button>)}</div>
+            </div>
+          </>}
           <div className="divider"/>
           <div className="card-title" style={{marginBottom:12}}>Placement</div>
           <div className="form-group">
             <label className="form-label">Soil Types</label>
-            <div className="chip-group">{SOIL_TYPES.map(s=><button key={s} className={`chip ${(form.placement.soilTypes||[]).includes(s)?'selected':''}`} onClick={()=>setP('soilTypes',toggleArr(form.placement.soilTypes||[],s))}>{s}</button>)}</div>
+            <div className="chip-group">{SOIL_TYPES.map(s=><button key={s} type="button" className={`chip ${(form.placement.soilTypes||[]).includes(s)?'selected':''}`} onClick={()=>setP('soilTypes',toggleArr(form.placement.soilTypes||[],s))}>{s}</button>)}</div>
           </div>
           <div className="form-group">
             <label className="form-label">Drainage</label>
-            <div className="chip-group">{DRAINAGE.map(d=><button key={d} className={`chip ${(form.placement.drainage||[]).includes(d)?'selected':''}`} onClick={()=>setP('drainage',toggleArr(form.placement.drainage||[],d))}>{d}</button>)}</div>
+            <div className="chip-group">{DRAINAGE.map(d=><button key={d} type="button" className={`chip ${(form.placement.drainage||[]).includes(d)?'selected':''}`} onClick={()=>setP('drainage',toggleArr(form.placement.drainage||[],d))}>{d}</button>)}</div>
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-            <div className="form-group"><label className="form-label">Pop Min</label><input className="form-input" placeholder="28,000" value={form.placement.popMin||''} onChange={e=>setP('popMin',e.target.value)}/></div>
-            <div className="form-group"><label className="form-label">Pop Max</label><input className="form-input" placeholder="36,000" value={form.placement.popMax||''} onChange={e=>setP('popMax',e.target.value)}/></div>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Target Yield Zone</label>
-            <div className="chip-group">{YIELD_ZONES.map(y=><button key={y} className={`chip ${(form.placement.yieldZones||[]).includes(y)?'selected':''}`} onClick={()=>setP('yieldZones',toggleArr(form.placement.yieldZones||[],y))}>{y}</button>)}</div>
-          </div>
+          {form.crop!=='Soybean'&&<>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+              <div className="form-group"><label className="form-label">Pop Min</label><input className="form-input" placeholder="28,000" value={form.placement.popMin||''} onChange={e=>setP('popMin',e.target.value)}/></div>
+              <div className="form-group"><label className="form-label">Pop Max</label><input className="form-input" placeholder="36,000" value={form.placement.popMax||''} onChange={e=>setP('popMax',e.target.value)}/></div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Target Yield Zone</label>
+              <div className="chip-group">{YIELD_ZONES.map(y=><button key={y} type="button" className={`chip ${(form.placement.yieldZones||[]).includes(y)?'selected':''}`} onClick={()=>setP('yieldZones',toggleArr(form.placement.yieldZones||[],y))}>{y}</button>)}</div>
+            </div>
+          </>}
           <div className="form-group"><label className="form-label">Placement Notes</label><textarea className="form-textarea" placeholder="Additional placement guidance…" value={form.placement.placementNotes||''} onChange={e=>setP('placementNotes',e.target.value)}/></div>
           <div className="form-group"><label className="form-label">Selling Points</label><textarea className="form-textarea" placeholder="Key selling points…" value={form.selling_points} onChange={e=>set('selling_points',e.target.value)}/></div>
           <div className="form-group"><label className="form-label">Notes</label><textarea className="form-textarea" placeholder="General notes…" value={form.notes} onChange={e=>set('notes',e.target.value)}/></div>
