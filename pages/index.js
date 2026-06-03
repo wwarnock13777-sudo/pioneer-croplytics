@@ -711,11 +711,12 @@ export default function CropLytics() {
       crop:editProduct.crop||'Corn', name:editProduct.name||'', brand:editProduct.brand||'Pioneer',
       maturity:editProduct.maturity||'', is_new:editProduct.is_new||false,
       technologies:editProduct.technologies||[], selling_points:editProduct.selling_points||'',
-      notes:editProduct.notes||'', scores:editProduct.scores||{},
+      notes:editProduct.notes||'', crm_fields:editProduct.crm_fields||{}, soy_traits:editProduct.soy_traits||{},
+      scores:editProduct.scores||{},
       placement:editProduct.placement||{soilTypes:[],drainage:[],popMin:'',popMax:'',yieldZones:[],placementNotes:''}
     } : {
       crop:'Corn', name:'', brand:'Pioneer', maturity:'', is_new:false,
-      technologies:[], selling_points:'', notes:'',
+      technologies:[], selling_points:'', notes:'', crm_fields:{}, soy_traits:{},
       scores:{}, placement:{soilTypes:[],drainage:[],popMin:'',popMax:'',yieldZones:[],placementNotes:''}
     })
     const [saving, setSaving] = useState(false)
@@ -1027,6 +1028,28 @@ export default function CropLytics() {
                 <ScoreBar val={(data.scores||{})[k]||0}/>
               </div>
             ))}
+            {data.crm_fields&&(data.crm_fields.silk_crm||data.crm_fields.physio_crm||data.crm_fields.gdu_silk||data.crm_fields.gdu_physio)&&<>
+              <div className="divider"/>
+              <div className="card-title" style={{marginBottom:10}}>CRM Details</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:8}}>
+                {data.crm_fields.silk_crm&&<div style={{background:'rgba(255,255,255,0.04)',borderRadius:8,padding:'8px 10px'}}><div style={{fontSize:10,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>Silk CRM</div><div style={{fontSize:14,marginTop:2}}>{data.crm_fields.silk_crm}</div></div>}
+                {data.crm_fields.physio_crm&&<div style={{background:'rgba(255,255,255,0.04)',borderRadius:8,padding:'8px 10px'}}><div style={{fontSize:10,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>Physio CRM</div><div style={{fontSize:14,marginTop:2}}>{data.crm_fields.physio_crm}</div></div>}
+                {data.crm_fields.gdu_silk&&<div style={{background:'rgba(255,255,255,0.04)',borderRadius:8,padding:'8px 10px'}}><div style={{fontSize:10,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>GDU to Silk</div><div style={{fontSize:14,marginTop:2}}>{data.crm_fields.gdu_silk}</div></div>}
+                {data.crm_fields.gdu_physio&&<div style={{background:'rgba(255,255,255,0.04)',borderRadius:8,padding:'8px 10px'}}><div style={{fontSize:10,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>GDU to Physio</div><div style={{fontSize:14,marginTop:2}}>{data.crm_fields.gdu_physio}</div></div>}
+              </div>
+            </>}
+            {data.soy_traits&&Object.keys(data.soy_traits).length>0&&<>
+              <div className="divider"/>
+              <div className="card-title" style={{marginBottom:10}}>Soybean Traits</div>
+              <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:8}}>
+                {data.soy_traits.phyto_gene?.length>0&&<div style={{fontSize:13,color:'var(--text-muted)'}}><strong style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1}}>Phyto Gene: </strong>{data.soy_traits.phyto_gene.join(', ')}</div>}
+                {data.soy_traits.bsr&&<div style={{fontSize:13,color:'var(--text-muted)'}}><strong style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1}}>BSR: </strong>{data.soy_traits.bsr}</div>}
+                {data.soy_traits.scn_source&&<div style={{fontSize:13,color:'var(--text-muted)'}}><strong style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1}}>SCN Source: </strong>{data.soy_traits.scn_source}</div>}
+                {data.soy_traits.flower_color&&<div style={{fontSize:13,color:'var(--text-muted)'}}><strong style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1}}>Flower: </strong>{data.soy_traits.flower_color}</div>}
+                {data.soy_traits.hila_color&&<div style={{fontSize:13,color:'var(--text-muted)'}}><strong style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1}}>Hila: </strong>{data.soy_traits.hila_color}</div>}
+                {data.soy_traits.pod_color&&<div style={{fontSize:13,color:'var(--text-muted)'}}><strong style={{color:'var(--text-dim)',fontSize:11,textTransform:'uppercase',letterSpacing:1}}>Pod: </strong>{data.soy_traits.pod_color}</div>}
+              </div>
+            </>}
             {data.placement&&<>
               <div className="divider"/>
               <div className="card-title" style={{marginBottom:10}}>Placement</div>
