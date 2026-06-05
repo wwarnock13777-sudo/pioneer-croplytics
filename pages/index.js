@@ -1117,7 +1117,7 @@ export default function CropLytics() {
                 </div>
               ))}
             </>}
-            <div className="entry-meta" style={{marginTop:16}}>Added by {data.entered_by&&<span className="by">{data.entered_by}</span>} {data.entered_by_role&&`(${data.entered_by_role})`} · {fmtDate(data.created_at)}</div>
+            <div className="entry-meta" style={{marginTop:16}}>{fmtDate(data.created_at)}</div>
           </div>
         </div>
       )
