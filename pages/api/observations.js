@@ -20,6 +20,18 @@ export default async function handler(req, res) {
       return res.status(201).json(rows[0])
     }
 
+    if (req.method === 'PATCH') {
+      const { id } = req.query
+      const { product_id, date, growth_stage, location, rating, notes } = req.body
+      const rows = await sql`
+        UPDATE observations SET
+          product_id=${product_id||null}, date=${date}, growth_stage=${growth_stage||''},
+          location=${location||''}, rating=${rating||0}, notes=${notes||''}
+        WHERE id=${id} RETURNING *
+      `
+      return res.json(rows[0])
+    }
+
     if (req.method === 'DELETE') {
       const { id } = req.query
       await sql`DELETE FROM observations WHERE id = ${id}`
