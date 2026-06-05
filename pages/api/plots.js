@@ -20,6 +20,15 @@ export default async function handler(req, res) {
       return res.status(201).json(rows[0])
     }
 
+    if (req.method === 'PATCH') {
+      const { id } = req.query
+      const { field_notes } = req.body
+      const rows = await sql`
+        UPDATE plot_entries SET field_notes=${field_notes||''} WHERE id=${id} RETURNING *
+      `
+      return res.json(rows[0])
+    }
+
     if (req.method === 'DELETE') {
       const { id } = req.query
       await sql`DELETE FROM plot_entries WHERE id = ${id}`
