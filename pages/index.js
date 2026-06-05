@@ -79,8 +79,33 @@ async function apiPatch(path, body) {
   if (!r.ok) throw new Error(await r.text())
   return r.json()
 }
+async function compressPhoto(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = ev => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const MAX = 1200
+        let w = img.width, h = img.height
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = Math.round(h * MAX / w); w = MAX }
+          else { w = Math.round(w * MAX / h); h = MAX }
+        }
+        canvas.width = w; canvas.height = h
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, w, h)
+        canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.82)
+      }
+      img.src = ev.target.result
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
 async function uploadPhoto(file) {
-  const r = await fetch('/api/upload', {method:'POST', headers:{'Content-Type':file.type}, body:file})
+  const compressed = await compressPhoto(file)
+  const r = await fetch('/api/upload', {method:'POST', headers:{'Content-Type':'image/jpeg'}, body:compressed})
   if (!r.ok) throw new Error(await r.text())
   const { url } = await r.json()
   return url
