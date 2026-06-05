@@ -415,7 +415,10 @@ export default function CropLytics() {
 
   // ── PRODUCTS ──
   function Products() {
-    const filtered = products.filter(p=>p.crop===productFilter).slice().sort((a,b)=>{ const am=parseFloat(a.maturity)||999; const bm=parseFloat(b.maturity)||999; return am-bm })
+    const [plenishFilter, setPlenishFilter] = useState(false)
+    const filtered = products.filter(p=>p.crop===productFilter)
+      .filter(p=>!plenishFilter || (p.technologies||[]).some(t=>t.toLowerCase().includes('plenish')))
+      .slice().sort((a,b)=>{ const am=parseFloat(a.maturity)||999; const bm=parseFloat(b.maturity)||999; return am-bm })
     return (
       <div>
         <div className="section-header">
@@ -430,6 +433,11 @@ export default function CropLytics() {
         <div className="filter-tabs">
           {['Corn','Soybean','Wheat'].map(f=><button key={f} className={`filter-tab ${productFilter===f?'active':''}`} onClick={()=>setProductFilter(f)}>{f}</button>)}
         </div>
+        {productFilter==='Soybean'&&<div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12,padding:'8px 12px',background:'rgba(74,140,84,0.08)',border:'1px solid var(--border-green)',borderRadius:8}}>
+          <span style={{fontSize:12,color:'var(--text-muted)',fontFamily:'Barlow Condensed',fontWeight:600,letterSpacing:0.5}}>FILTER:</span>
+          <button className={`chip ${!plenishFilter?'selected':''}`} onClick={()=>setPlenishFilter(false)}>All Soy</button>
+          <button className={`chip ${plenishFilter?'selected':''}`} onClick={()=>setPlenishFilter(true)}>Plenish Only</button>
+        </div>}
         {filtered.length===0
           ? <div className="empty-state"><p>No products yet.{isAdmin?' Tap Add to get started.':''}</p></div>
           : filtered.map(p=>{
@@ -455,7 +463,6 @@ export default function CropLytics() {
                   </div>
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:8}}>
                     <div className="entry-meta" style={{marginTop:0}}>
-                      {p.entered_by&&<span className="by">{p.entered_by}</span>}
                       <span>{fmtDate(p.created_at)}</span>
                     </div>
                     {isAdmin && (
@@ -539,7 +546,7 @@ export default function CropLytics() {
   function Compare() {
     const [crop, setCrop] = useState('Corn')
     const [selected, setSelected] = useState([])
-    const cropProds = products.filter(p=>p.crop===crop)
+    const cropProds = products.filter(p=>p.crop===crop).slice().sort((a,b)=>{ const am=parseFloat(a.maturity)||999; const bm=parseFloat(b.maturity)||999; return am-bm })
     const scoreKeys = crop==='Corn'?CORN_SCORES:crop==='Soybean'?SOY_SCORES:WHEAT_SCORES
     const colors = ['var(--gold)','var(--gd-light)','#8B9EFF','#FF9E6D']
 
@@ -1119,6 +1126,20 @@ export default function CropLytics() {
     if (type==='obs') {
       const prod=products.find(p=>p.id===data.product_id)
       const canDelete = isAdmin || data.entered_by === user?.name
+      const [editing, setEditing] = useState(false)
+      const [editForm, setEditForm] = useState({product_id:data.product_id||'', date:data.date?.split('T')[0]||'', growth_stage:data.growth_stage||'', location:data.location||'', rating:data.rating||0, notes:data.notes||''})
+      const [saving, setSaving] = useState(false)
+      function setEF(k,v){ setEditForm(f=>({...f,[k]:v})) }
+      const selectedProd = products.find(p=>p.id===editForm.product_id)
+      const stages = selectedProd?.crop==='Corn'?STAGES_CORN:STAGES_SOY
+      async function saveEdit() {
+        setSaving(true)
+        try {
+          await apiPatch(`/api/observations?id=${data.id}`, {...editForm, entered_by:data.entered_by, entered_by_role:data.entered_by_role})
+          await loadAll(); setShowDetail(null); showToast('Observation updated!')
+        } catch(e){ alert('Error: '+e.message) }
+        setSaving(false)
+      }
       async function deleteObs() {
         if (!confirm('Delete this observation?')) return
         try {
@@ -1132,8 +1153,21 @@ export default function CropLytics() {
             <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
               <button onClick={()=>setShowDetail(null)} style={{background:'#CC0000',border:'none',borderRadius:8,height:36,padding:'0 14px',display:'flex',alignItems:'center',gap:5,cursor:'pointer',color:'white',flexShrink:0,fontFamily:'Barlow Condensed',fontWeight:700,fontSize:13,letterSpacing:0.5,boxShadow:'0 2px 8px rgba(204,0,0,0.4)'}}><IconBack/> BACK</button>
               <div style={{fontFamily:'Barlow Condensed',fontWeight:800,fontSize:22,color:'#fff',flex:1}}>{prod?.name||'Observation'}</div>
+              <button onClick={()=>setEditing(e=>!e)} style={{background:'rgba(74,140,84,0.15)',border:'1px solid var(--border-green)',borderRadius:8,padding:'6px 12px',color:'var(--gd-light)',fontSize:12,fontFamily:'Barlow Condensed',fontWeight:700,cursor:'pointer',flexShrink:0}}>{editing?'Cancel':'Edit'}</button>
               {canDelete && <button onClick={deleteObs} style={{background:'rgba(200,0,0,0.15)',border:'1px solid rgba(200,0,0,0.3)',borderRadius:8,padding:'6px 12px',color:'#ff6b6b',fontSize:12,fontFamily:'Barlow Condensed',fontWeight:700,cursor:'pointer',flexShrink:0}}>Delete</button>}
             </div>
+            {editing&&<>
+              <div className="form-group"><label className="form-label">Product</label><select className="form-select" value={editForm.product_id} onChange={e=>setEF('product_id',e.target.value)}><option value="">Select…</option>{products.map(p=><option key={p.id} value={p.id}>{p.name} ({p.crop})</option>)}</select></div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                <div className="form-group"><label className="form-label">Date</label><input type="date" className="form-input" value={editForm.date} onChange={e=>setEF('date',e.target.value)}/></div>
+                <div className="form-group"><label className="form-label">Growth Stage</label><select className="form-select" value={editForm.growth_stage} onChange={e=>setEF('growth_stage',e.target.value)}><option value="">Select…</option>{stages.map(s=><option key={s}>{s}</option>)}</select></div>
+              </div>
+              <div className="form-group"><label className="form-label">Location</label><input className="form-input" value={editForm.location} onChange={e=>setEF('location',e.target.value)}/></div>
+              <div className="form-group"><label className="form-label">Rating</label><div className="rating-input">{[1,2,3,4,5].map(n=><span key={n} className={`rating-star ${n<=editForm.rating?'filled':''}`} onClick={()=>setEF('rating',n)}>★</span>)}</div></div>
+              <div className="form-group"><label className="form-label">Notes</label><textarea className="form-textarea" style={{minHeight:80}} value={editForm.notes} onChange={e=>setEF('notes',e.target.value)}/></div>
+              <button className="btn btn-primary btn-full" onClick={saveEdit} disabled={saving} style={{marginBottom:16}}>{saving?'Saving…':'Save Changes'}</button>
+              <div className="divider"/>
+            </>}
             {prod&&<div style={{marginBottom:12}}><CropTag crop={prod.crop}/></div>}
             <div style={{display:'flex',gap:16,marginBottom:14,flexWrap:'wrap'}}>
               <div><div style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>Date</div><div style={{fontSize:14}}>{fmtDate(data.date)}</div></div>
@@ -1159,6 +1193,17 @@ export default function CropLytics() {
 
     if (type==='plot') {
       const canDelete = isAdmin || data.entered_by === user?.name
+      const [editing, setEditing] = useState(false)
+      const [editNotes, setEditNotes] = useState(data.field_notes||'')
+      const [saving, setSaving] = useState(false)
+      async function saveEdit() {
+        setSaving(true)
+        try {
+          await apiPatch(`/api/plots?id=${data.id}`, {field_notes: editNotes})
+          await loadAll(); setShowDetail(null); showToast('Entry updated!')
+        } catch(e){ alert('Error: '+e.message) }
+        setSaving(false)
+      }
       async function deletePlot() {
         if (!confirm('Delete this entry?')) return
         try {
@@ -1172,8 +1217,14 @@ export default function CropLytics() {
             <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:18}}>
               <button onClick={()=>setShowDetail(null)} style={{background:'#CC0000',border:'none',borderRadius:8,height:36,padding:'0 14px',display:'flex',alignItems:'center',gap:5,cursor:'pointer',color:'white',flexShrink:0,fontFamily:'Barlow Condensed',fontWeight:700,fontSize:13,letterSpacing:0.5,boxShadow:'0 2px 8px rgba(204,0,0,0.4)'}}><IconBack/> BACK</button>
               <div style={{fontFamily:'Barlow Condensed',fontWeight:800,fontSize:22,color:'#fff',flex:1}}>{data.field_name}</div>
+              <button onClick={()=>setEditing(e=>!e)} style={{background:'rgba(74,140,84,0.15)',border:'1px solid var(--border-green)',borderRadius:8,padding:'6px 12px',color:'var(--gd-light)',fontSize:12,fontFamily:'Barlow Condensed',fontWeight:700,cursor:'pointer',flexShrink:0}}>{editing?'Cancel':'Edit'}</button>
               {canDelete && <button onClick={deletePlot} style={{background:'rgba(200,0,0,0.15)',border:'1px solid rgba(200,0,0,0.3)',borderRadius:8,padding:'6px 12px',color:'#ff6b6b',fontSize:12,fontFamily:'Barlow Condensed',fontWeight:700,cursor:'pointer',flexShrink:0}}>Delete</button>}
             </div>
+            {editing&&<>
+              <div className="form-group"><label className="form-label">Field Notes</label><textarea className="form-textarea" style={{minHeight:100}} value={editNotes} onChange={e=>setEditNotes(e.target.value)}/></div>
+              <button className="btn btn-primary btn-full" onClick={saveEdit} disabled={saving} style={{marginBottom:16}}>{saving?'Saving…':'Save Changes'}</button>
+              <div className="divider"/>
+            </>}
             <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>
               <span className={`crop-tag ${data.type==='pkp'?'corn':'soybean'}`}>{data.type?.toUpperCase()}</span>
               <span style={{fontSize:11,color:'var(--text-dim)',textTransform:'uppercase',letterSpacing:1}}>{data.crop}</span>
